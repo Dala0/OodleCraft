@@ -10,7 +10,7 @@ def intersects( cubeAt, rayStart, rayDir ):
 	cubePos = cubeCentre - rayStart
 	distance = cubePos.dot(rayDir)
 	#print "distance: ",distance
-	if distance > range:
+	if distance > range or distance < 0:
 		return None
 	if abs( rayDir.x ) > 0:
 		xt1 = (cubePos.x+0.5)/rayDir.x

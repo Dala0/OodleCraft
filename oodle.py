@@ -7,17 +7,11 @@ from vec import *
 from geom import *
 import pickle
 from glPrims import *
+from assets import *
 from materials import *
 
 #constants
 grain = 16
-
-#material types
-STONE = 1
-DIRT = 2
-GRASS = 3
-
-lookup = { STONE:'stone', DIRT:'wood', GRASS:'leaf' }
 
 #images / textures
 textures = {}
@@ -78,7 +72,7 @@ def update(dt):
 	aimpair = findIntersectingBlockAndVacancy()
 
 space = {}
-plonk = STONE
+plonk = 1
 space[(0,0,0)] = plonk
 
 drawable = {}
@@ -144,6 +138,8 @@ except IOError:
 
 # Direct OpenGL commands to this window.
 window = pyglet.window.Window()
+width,height = window.get_size()
+print width, height
 mode = 0
 def switchMode(newMode):
 	global mode,playercontrol
@@ -159,8 +155,8 @@ chunks = {}
 
 def makeWorldList(x,y,z,dimension):
 	listName = hash(repr((x,y,z)))
-	print (x,y,z)
-	print listName
+	#print (x,y,z)
+	#print listName
 	low = Vec3(x,y,z)*grain
 	hi = Vec3(x+1,y+1,z+1)*grain
 	glNewList(listName,GL_COMPILE)
@@ -191,13 +187,13 @@ def updateWorldList(adjusted):
 	chunks[(x,y,z)] = makeWorldList(x,y,z,grain)
 
 todo = {}
-print len( space )
+#print len( space )
 for k,v in space.items():
 	t=(int(k[0]/16),int(k[1]/16),int(k[2]/16))
 	todo[t] = True
-print len( todo )
+#print len( todo )
 for k,v in todo.items():
-	print k
+	#print k
 	chunks[k] = makeWorldList(k[0],k[1],k[2],grain)
 del todo
 
@@ -261,6 +257,15 @@ def on_key_release(symbol, modifiers):
 			playercontrol.z = 0
 		if symbol == key.SPACE or symbol == key.LSHIFT:
 			playercontrol.y = 0
+			
+@window.event
+def on_mouse_scroll(x, y, scroll_x, scroll_y):
+	global plonk
+	plonk = plonk - scroll_y
+	while plonk < 1:
+		plonk = plonk + MAX_ID
+	while plonk > MAX_ID:
+		plonk = plonk - MAX_ID
 
 @window.event
 def on_draw():
@@ -319,18 +324,28 @@ def on_draw():
 		glColor4f(1.0,0.0,0.0,0.5)
 		glCallList(cutList[direc])
 		glPopMatrix()		
-	
+
 	glMatrixMode(GL_PROJECTION)
 	glLoadIdentity()
-	glOrtho(-1,1,-1,1,-1,1);
+	w = width / 2
+	h = height / 2
+	glOrtho(-w,w,-h,h,-1,1);
 	glMatrixMode(GL_MODELVIEW)
 	glLoadIdentity()
 	glColor4f(1.0,1.0,1.0,0.9)
-	glScalef(0.1,0.1,0.1)
+	glScalef(16.0,16.0,0.1)
 	glEnable(cursortexture.target)
 	glBindTexture(cursortexture.target,cursortexture.id)
 	glCallList(ZNEG)
-	
+
+	glLoadIdentity()
+	glTranslatef(8+16-w,8+16-h,0)
+	glScalef(16.0,16.0,0.1)
+	texture = textures[plonk]
+	glEnable(texture.target)
+	glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+	glBindTexture(texture.target,texture.id)
+	glCallList(ZNEG)
 pyglet.app.run()
 
 save()
