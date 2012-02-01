@@ -10,6 +10,25 @@ from glPrims import *
 from assets import *
 from materials import *
 
+import threading
+import netcore
+import time
+c = netcore.netcore()
+mess = []
+def readMessages():
+	global c
+	while c:
+		ms = c.recvall()
+		for m in ms:
+			mess.append( m )
+		time.sleep(0.1)
+def sendMessage(message):
+	global c
+	c.sendable.append(message)
+t = threading.Thread(target=readMessages)
+t.daemon = True
+t.start()
+
 #constants
 grain = 16
 
@@ -47,8 +66,12 @@ aimpair = ((0,0,0),(0,1,0))
 
 acceleration = 0.01
 
+space = {}
+plonk = 1
+space[(0,0,0)] = plonk
+
 def update(dt):
-	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside
+	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside, space
 
 	#update camera aim
 	sy,cy = sin(playeraimyaw),cos(playeraimyaw)
@@ -70,10 +93,26 @@ def update(dt):
 	playervel = playervel + diff
 	playerpos = playerpos + playervel
 	aimpair = findIntersectingBlockAndVacancy()
-
-space = {}
-plonk = 1
-space[(0,0,0)] = plonk
+	for m in mess:
+		if m[0]=='d':
+			try:
+				pos = m[1:].split(',')
+				pos = Vec3(int(pos[0]),int(pos[1]),int(pos[2]))
+				pos = pos.toTuple()
+				if pos in space:
+					del space[pos]
+			except:
+				pass
+		if m[0]=='a':
+			try:
+				pos = m[1:].split(',')
+				mat = int(pos[0])
+				pos = Vec3(int(pos[1]),int(pos[2]),int(pos[3]))
+				pos = pos.toTuple()
+				if not pos in space:
+					space[pos] = mat
+			except:
+				pass
 
 drawable = {}
 
@@ -214,9 +253,11 @@ def on_mouse_press(x,y, buttons, modifiers):
 			centre, vacancy = aimpair
 			if buttons & mouse.LEFT:
 				del space[centre]
+				sendMessage("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
 				updateWorldList(centre)
 			if buttons & mouse.RIGHT:
 				space[vacancy] = plonk
+				sendMessage("a"+str(plonk)+','+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
 				updateWorldList(vacancy)
 
 newRenderer = True
@@ -347,5 +388,4 @@ def on_draw():
 	glBindTexture(texture.target,texture.id)
 	glCallList(ZNEG)
 pyglet.app.run()
-
 save()
