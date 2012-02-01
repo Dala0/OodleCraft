@@ -12,18 +12,19 @@ from materials import *
 #constants
 grain = 16
 
+#material types
+STONE = 1
+DIRT = 2
+GRASS = 3
+
+lookup = { STONE:'stone', DIRT:'wood', GRASS:'leaf' }
 
 #images / textures
-dirt = image.load('sprites/dirt.png')
-dads = image.load('sprites/dads.png')
-
-images = {}
 textures = {}
 for k,val in lookup.items():
-	images[k] = dirt.get_region(16*val[0],16*val[1],16,16)
-	textures[k] = images[k].get_texture()
+	textures[k] = icons[val].get_texture()
 
-cursor = dads.get_region(16*0,16*7,16,16)
+cursor = icons['cursor']
 cursortexture = cursor.get_texture()
 	
 #drawlists for cutting
