@@ -71,7 +71,7 @@ plonk = 1
 space[(0,0,0)] = plonk
 
 def update(dt):
-	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside, space
+	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside, space, mess
 
 	#update camera aim
 	sy,cy = sin(playeraimyaw),cos(playeraimyaw)
@@ -93,24 +93,36 @@ def update(dt):
 	playervel = playervel + diff
 	playerpos = playerpos + playervel
 	aimpair = findIntersectingBlockAndVacancy()
-	for m in mess:
+	while len( mess ) > 0:
+		m = mess[0]
+		mess = mess[1:]
+		print m
 		if m[0]=='d':
 			try:
+				print "delete"
 				pos = m[1:].split(',')
-				pos = Vec3(int(pos[0]),int(pos[1]),int(pos[2]))
-				pos = pos.toTuple()
+				print "from"
+				pos = (int(pos[0]),int(pos[1]),int(pos[2]))
+				print pos
 				if pos in space:
+					print "was there, deleted it"
 					del space[pos]
+					updateWorldList(pos)
 			except:
 				pass
 		if m[0]=='a':
 			try:
+				print "add"
 				pos = m[1:].split(',')
+				print "to"
 				mat = int(pos[0])
-				pos = Vec3(int(pos[1]),int(pos[2]),int(pos[3]))
-				pos = pos.toTuple()
+				print "a ",mat
+				pos = (int(pos[1]),int(pos[2]),int(pos[3]))
+				print "at ",pos
 				if not pos in space:
+					print "where is was empty"
 					space[pos] = mat
+					updateWorldList(pos)
 			except:
 				pass
 
@@ -257,7 +269,7 @@ def on_mouse_press(x,y, buttons, modifiers):
 				updateWorldList(centre)
 			if buttons & mouse.RIGHT:
 				space[vacancy] = plonk
-				sendMessage("a"+str(plonk)+','+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
+				sendMessage("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
 				updateWorldList(vacancy)
 
 newRenderer = True
@@ -322,7 +334,7 @@ def on_draw():
 	targetLook = playerpos + playeraim
 	gluLookAt(playerpos.x,playerpos.y,playerpos.z, targetLook.x,targetLook.y,targetLook.z, 0,1,0)
 
-	glClearColor(0.0, 0.0, 0.0, 1.0)
+	glClearColor(0.5, 0.8, 0.9, 1.0)
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
 	glMatrixMode(GL_MODELVIEW)
