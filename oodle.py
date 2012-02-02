@@ -24,7 +24,7 @@ def readMessages():
 		time.sleep(0.1)
 def sendMessage(message):
 	global c
-	c.sendable.append(message)
+	c.send(message)
 t = threading.Thread(target=readMessages)
 t.daemon = True
 t.start()
