@@ -2,6 +2,9 @@ from pyglet.gl import *
 from pyglet import image
 from pyglet.window import key
 from pyglet.window import mouse
+from pyglet import font
+from pyglet.font import GlyphString
+
 from math import * # trigonometry
 from vec import *
 from geom import *
@@ -28,6 +31,12 @@ def sendMessage(message):
 t = threading.Thread(target=readMessages)
 t.daemon = True
 t.start()
+
+arial = font.load('Arial', 12, bold=True, italic=False)
+text = 'Hello, world!'
+glyphs = arial.get_glyphs(text)
+glyph_string = GlyphString(text, glyphs)
+
 
 #constants
 grain = 16
@@ -391,6 +400,7 @@ def on_draw():
 	glBindTexture(cursortexture.target,cursortexture.id)
 	glCallList(ZNEG)
 
+	glDisable(GL_DEPTH_TEST)
 	glLoadIdentity()
 	glTranslatef(8+16-w,8+16-h,0)
 	glScalef(16.0,16.0,0.1)
@@ -399,5 +409,22 @@ def on_draw():
 	glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 	glBindTexture(texture.target,texture.id)
 	glCallList(ZNEG)
+	
+	glLoadIdentity()
+	glTranslatef(8+16+16+8-w,8+16-h,0)
+	glPushMatrix()
+	glColor4f(0,0,0,0.5)
+	glyph_string.draw()
+	glTranslatef(0,2,0)
+	glyph_string.draw()
+	glTranslatef(2,0,0)
+	glyph_string.draw()
+	glTranslatef(0,-2,0)
+	glyph_string.draw()
+	glPopMatrix()		
+	glTranslatef(1,1,0)
+	glColor4f(1.0,1.0,1.0,1.0)
+	glyph_string.draw()
+
 pyglet.app.run()
 save()
