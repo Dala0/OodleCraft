@@ -330,7 +330,7 @@ def on_draw():
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 	glMatrixMode(GL_PROJECTION)
 	glLoadIdentity()
-	gluPerspective(90,1,0.01,1000)
+	gluPerspective(70,width*1.0/height,0.01,1000)
 	targetLook = playerpos + playeraim
 	gluLookAt(playerpos.x,playerpos.y,playerpos.z, targetLook.x,targetLook.y,targetLook.z, 0,1,0)
 
