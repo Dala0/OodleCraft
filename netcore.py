@@ -9,15 +9,16 @@ def joiners(core):
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.settimeout(1)
-	print "binding joiners to ", ('', core.BPORT)
+	#print "binding joiners to ", ('', core.BPORT)
 	s.bind(('', core.BPORT))
 	while True:
 		try:
 			message, address = s.recvfrom(1024)
 			if not address[0] == core.hostip:
-				print "Got data from", address, ":", message
+				#print "Got data from", address, ":", message
 				if not address in core.peers:
 					core.peers.append(address)
+				if message == 'ping':
 					# Acknowledge it.
 					core.broadcastable.append( "me" )
 		except socket.timeout:
@@ -27,12 +28,12 @@ def messagers(core):
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.settimeout(1)
-	print "binding messagers to ",('', core.CPORT)
+	#print "binding messagers to ",('', core.CPORT)
 	s.bind(('', core.CPORT))
 	while True:
 		try:
 			message, address = s.recvfrom(1024)
-			print "Got data from", address, ":", message
+			#print "Got data from", address, ":", message
 			core.recvd.append( message )
 		except socket.timeout:
 			pass
@@ -41,12 +42,12 @@ def broadcastPusher(core):
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-	print "binding broadcast to ",core.hostip
+	#print "binding broadcast to ",core.hostip
 	s.bind((core.hostip, core.BPORT))
 	while True:
 		if len( core.broadcastable ) > 0:
 			data = core.broadcastable[0]
-			print 'broadasting ',data
+			#print 'broadasting ',data
 			s.sendto(data, ('<broadcast>', core.BPORT))
 			core.broadcastable = core.broadcastable[1:]
 		else:
@@ -58,13 +59,13 @@ def messagePusher(core):
 	while True:
 		if len( core.sendable ) > 0:
 			data = core.sendable[0]
-			print 'sending',data
+			#print 'sending',data
 			for dest in core.peers:
-				print 'to ',dest
+				#print 'to ',dest
 				s.sendto(data, (dest[0],core.CPORT))
 			core.sendable = core.sendable[1:]
 		else:
-			time.sleep(1)
+			time.sleep(0.01)
 
 def get_ip_list():
 	try:
