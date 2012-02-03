@@ -60,3 +60,19 @@ def bounds( low, hi, target ):
 		return False
 	return True
 
+def getDisplacementFromCube( cubePos, point ):
+	x,y,z = 0,0,0
+	if cubePos[0] > point[0]:
+		x = point[0] - cubePos[0]
+	if cubePos[0] + 1 < point[0]:
+		x = point[0] - ( cubePos[0] + 1 )
+	if cubePos[1] > point[1]:
+		y = point[1] - cubePos[1]
+	if cubePos[1] + 1 < point[1]:
+		y = point[1] - ( cubePos[1] + 1 )
+	if cubePos[2] > point[2]:
+		z = point[2] - cubePos[2]
+	if cubePos[2] + 1 < point[2]:
+		z = point[2] - ( cubePos[2] + 1 )
+	return (x,y,z)
+

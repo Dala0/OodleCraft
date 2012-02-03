@@ -118,7 +118,8 @@ def density( x, y, z ):
 
 def findGoodChunk(chunks):
 	for chunk in chunks:
-		diff = abs(T2V(chunk)-(playerpos*(1.0/edge)))
+		disp = getDisplacementFromCube( chunk, (playerpos*(1.0/edge)).toTuple() )
+		diff = abs(T2V(disp))
 		if diff < 10.0/edge:
 			chunks.remove(chunk)
 			return chunk,chunks
@@ -175,7 +176,7 @@ def update(dt):
 	playerpos = playerpos + playervel
 	aimpair = findIntersectingBlockAndVacancy()
 	updateFromNetwork()
-	updateProcGen()
+	#updateProcGen()
 
 drawable = {}
 
@@ -185,13 +186,6 @@ def findIntersectingBlockAndVacancy():
 	best = None
 	bestTime = 100
 	genlist = []
-	#edge = 4
-	#for x in range(-edge,edge):
-	#	for y in range(-edge,edge):
-	#		for z in range(-edge,edge):
-	#			g = (x+int(playerpos.x),y+int(playerpos.y),z+int(playerpos.z))
-	#			if g in space:
-	#				genlist.append(g)	
 	for cube,val in space.items():
 		#for cube in genlist:
 		test = intersects( cube, playerpos, playeraim )
