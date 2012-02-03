@@ -100,7 +100,7 @@ def updateFromNetwork():
 			except:
 				pass
 
-edge = 4
+edge = 16
 genchunks = [ (0,0,0) ]
 donechunks = []
 def getNewChunks( start, excluding ):
@@ -118,26 +118,11 @@ def density( x, y, z ):
 
 def findGoodChunk(chunks):
 	for chunk in chunks:
-		diff = abs(T2V(chunk)-playerpos)
+		diff = abs(T2V(chunk)-(playerpos*(1.0/edge)))
 		if diff < 10.0/edge:
 			chunks.remove(chunk)
 			return chunk,chunks
 	return None,chunks
-
-def updateProcGenMeh():
-	global space
-	#print start
-	genlist = []
-	edge = 10
-	for x in range(-edge,edge):
-		for y in range(-edge,edge):
-			for z in range(-edge,edge):
-				genlist.append((x,y,z))
-	for g in genlist:
-		h = density(g[0],g[1],g[2])
-		#print h,' at ',g
-		if h > 0:
-			space[g] = 1
 
 def updateProcGen():
 	global genchunks, space
