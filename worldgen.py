@@ -28,9 +28,54 @@ def noise( x, level, salt ):
 	n = hashIt( str(x)+'a'+str(level)+'a'+str(salt) )
 	n = ( ( n / 64 ) & 127 ) - 63
 	return n
+
+def noise2( x,y, level, salt ):
+	n = hashIt( str(x)+'a'+str(y)+'a'+str(level)+'a'+str(salt) )
+	n = ( ( n / 64 ) & 127 ) - 63
+	return n
+
+h3dlist = {}
+def perlin3d( x, y, z, level, minlevel, salt ):
+	global hlist
+	address = str((x,y,z))+','+str(level)+','+str(salt)
+	try:
+		h = h3dlist[ address ]
+		return h
+	except KeyError:
+		h = 0
+		for i in range( minlevel, level ):
+			ax = x>>i
+			ay = y>>i
+			az = z>>i
+			ox = ax<<i
+			oy = ay<<i
+			oz = az<<i
+			dx = x-ox
+			dy = y-oy
+			dz = z-oz
+			dm = 1<<i
+			ah = noise( (ax, ay, az), i, salt )
+			bh = noise( (ax+1, ay, az), i, salt )
+			ch = noise( (ax, ay+1, az), i, salt )
+			dh = noise( (ax+1, ay+1, az), i, salt )
+			lh = ( ah * (dm-dx) + bh * dx ) / dm
+			hh = ( ch * (dm-dx) + dh * dx ) / dm
+			l1 = ( lh * (dm-dy) + hh * dy ) / dm
+			ah = noise( (ax, ay, az+1), i, salt )
+			bh = noise( (ax+1, ay, az+1), i, salt )
+			ch = noise( (ax, ay+1, az+1), i, salt )
+			dh = noise( (ax+1, ay+1, az+1), i, salt )
+			lh = ( ah * (dm-dx) + bh * dx ) / dm
+			hh = ( ch * (dm-dx) + dh * dx ) / dm
+			l2 = ( lh * (dm-dy) + hh * dy ) / dm
+			fh = ( l1 * (dm-dz) + l2 * dz ) / dm
+			h += fh
+			h *= 0.5
+		h3dlist[ address ] = h
+		return h
 	
 hlist = {}
-def perlin( x, level, salt ):
+def perlin1( x, level, salt ):
 	global hlist
 	address = str(x)+'a'+str(level)+'a'+str(salt)
 	try:
@@ -68,7 +113,7 @@ def generateworld( location, salt ):
 
 	h = 0
 	if y < 128 or y > -128:
-		h = perlin( x, 8, salt )
+		h = perlin1( x, 8, salt )
 
 	depth = y - h
 	if depth < 0:

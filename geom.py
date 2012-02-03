@@ -1,17 +1,19 @@
 from vec import *
 
 def intersects( cubeAt, rayStart, rayDir ):
-	xDiff = (1,0,0)
-	yDiff = (0,1,0)
-	zDiff = (0,0,1)
 	range = 10
-	xt1,xt2,yt1,yt2,zt1,zt2 = 0,range,0,range,0,range
 	cubeCentre = Vec3( cubeAt[0], cubeAt[1], cubeAt[2] )
 	cubePos = cubeCentre - rayStart
+	if abs(cubePos) > range:
+		return None
 	distance = cubePos.dot(rayDir)
 	#print "distance: ",distance
 	if distance > range or distance < 0:
 		return None
+	xDiff = (1,0,0)
+	yDiff = (0,1,0)
+	zDiff = (0,0,1)
+	xt1,xt2,yt1,yt2,zt1,zt2 = 0,range,0,range,0,range
 	if abs( rayDir.x ) > 0:
 		xt1 = (cubePos.x+0.5)/rayDir.x
 		xt2 = (cubePos.x-0.5)/rayDir.x

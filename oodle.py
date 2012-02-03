@@ -12,25 +12,10 @@ import pickle
 from glPrims import *
 from assets import *
 from materials import *
+from worldgen import *
 
-import threading
 import netcore
-import time
 c = netcore.netcore()
-mess = []
-def readMessages():
-	global c
-	while c:
-		ms = c.recvall()
-		for m in ms:
-			mess.append( m )
-		time.sleep(0.1)
-def sendMessage(message):
-	global c
-	c.send(message)
-t = threading.Thread(target=readMessages)
-t.daemon = True
-t.start()
 
 arial = font.load('Arial', 12, bold=True, italic=False)
 text = 'Hello, world!'
@@ -79,29 +64,9 @@ space = {}
 plonk = 1
 space[(0,0,0)] = plonk
 
-def update(dt):
-	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside, space, mess
-
-	#update camera aim
-	sy,cy = sin(playeraimyaw),cos(playeraimyaw)
-	sp,cp = sin(playeraimpitch),cos(playeraimpitch)
-	playeraim = Vec3( cp * sy, sp, cp * cy )
-	playerflataim = Vec3( sy, 0, cy )
-	playerflatside = playerflataim.crossY()
-
-	#update physics
-	realforward = playerflataim * playercontrol.z
-	realside = playerflatside * playercontrol.x
-	realcontrol = realforward + realside
-	realcontrol.y = playercontrol.y
-	diff = realcontrol - playervel
-	acc = acceleration
-	if playervel.dot( realcontrol ) < 0:
-		acc = acc * 2
-	diff.clampmag(acc)
-	playervel = playervel + diff
-	playerpos = playerpos + playervel
-	aimpair = findIntersectingBlockAndVacancy()
+def updateFromNetwork():
+	global space
+	mess = c.recvall()
 	while len( mess ) > 0:
 		m = mess[0]
 		mess = mess[1:]
@@ -135,13 +100,115 @@ def update(dt):
 			except:
 				pass
 
+edge = 4
+genchunks = [ (0,0,0) ]
+donechunks = []
+def getNewChunks( start, excluding ):
+	x,y,z = start
+	potential = [(x+1,y,z),(x-1,y,z),
+		(x,y+1,z),(x,y-1,z),(x,y,z+1),(x,y,z-1)]
+	actual = []
+	for p in potential:
+		if not p in excluding:
+			actual.append(p)
+	return actual
+	
+def density( x, y, z ):
+	return 2*perlin3d(x,y,z,5,1,'') - y*8
+
+def findGoodChunk(chunks):
+	for chunk in chunks:
+		diff = abs(T2V(chunk)-playerpos)
+		if diff < 10.0/edge:
+			chunks.remove(chunk)
+			return chunk,chunks
+	return None,chunks
+
+def updateProcGenMeh():
+	global space
+	#print start
+	genlist = []
+	edge = 10
+	for x in range(-edge,edge):
+		for y in range(-edge,edge):
+			for z in range(-edge,edge):
+				genlist.append((x,y,z))
+	for g in genlist:
+		h = density(g[0],g[1],g[2])
+		#print h,' at ',g
+		if h > 0:
+			space[g] = 1
+
+def updateProcGen():
+	global genchunks, space
+	#print "updateProcGen"
+	chunkToDo,genchunks = findGoodChunk(genchunks)
+	if chunkToDo:
+		#print chunkToDo
+		start = tuple( x*edge for x in chunkToDo)
+		#print start
+		genlist = []
+		for x in range(edge):
+			for y in range(edge):
+				for z in range(edge):
+					genlist.append((x+start[0],y+start[1],z+start[2]))
+		#print genlist
+		filled = True
+		for g in genlist:
+			h = density(g[0],g[1],g[2])
+			if h > 0:
+				space[g] = 1
+				filled = True
+		donechunks.append(chunkToDo)
+		if filled:
+			updateWorldList(genlist[0])
+			newchunks = getNewChunks(chunkToDo,genchunks+donechunks)
+			genchunks = genchunks + newchunks
+	
+
+def update(dt):
+	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside
+
+	#update camera aim
+	sy,cy = sin(playeraimyaw),cos(playeraimyaw)
+	sp,cp = sin(playeraimpitch),cos(playeraimpitch)
+	playeraim = Vec3( cp * sy, sp, cp * cy )
+	playerflataim = Vec3( sy, 0, cy )
+	playerflatside = playerflataim.crossY()
+
+	#update physics
+	realforward = playerflataim * playercontrol.z
+	realside = playerflatside * playercontrol.x
+	realcontrol = realforward + realside
+	realcontrol.y = playercontrol.y
+	diff = realcontrol - playervel
+	acc = acceleration
+	if playervel.dot( realcontrol ) < 0:
+		acc = acc * 2
+	diff.clampmag(acc)
+	playervel = playervel + diff
+	playerpos = playerpos + playervel
+	aimpair = findIntersectingBlockAndVacancy()
+	updateFromNetwork()
+	updateProcGen()
+
 drawable = {}
 
 
 def findIntersectingBlockAndVacancy():
+	return None
 	best = None
 	bestTime = 100
+	genlist = []
+	#edge = 4
+	#for x in range(-edge,edge):
+	#	for y in range(-edge,edge):
+	#		for z in range(-edge,edge):
+	#			g = (x+int(playerpos.x),y+int(playerpos.y),z+int(playerpos.z))
+	#			if g in space:
+	#				genlist.append(g)	
 	for cube,val in space.items():
+		#for cube in genlist:
 		test = intersects( cube, playerpos, playeraim )
 		if test:
 			time,diff = test
@@ -153,6 +220,50 @@ def findIntersectingBlockAndVacancy():
 				bestTime=time
 	return best
 
+#updateProcGen()
+chunks = {}
+
+def makeWorldList(x,y,z,dimension):
+	listName = hash(repr((x,y,z)))
+	#print (x,y,z)
+	#print listName
+	low = Vec3(x,y,z)*grain
+	hi = Vec3(x+1,y+1,z+1)*grain
+	glNewList(listName,GL_COMPILE)
+	for loc, element in space.items():
+		l = Vec3(loc[0],loc[1],loc[2])
+		i,j,k = (l-low).toTuple()
+		if bounds( low, hi, l ):
+			sides = []
+			if not (loc[0]+1,loc[1]+0,loc[2]+0) in space: sides.append( XPOS )
+			if not (loc[0]-1,loc[1]+0,loc[2]+0) in space: sides.append( XNEG )
+			if not (loc[0]+0,loc[1]+1,loc[2]+0) in space: sides.append( YPOS )
+			if not (loc[0]+0,loc[1]-1,loc[2]+0) in space: sides.append( YNEG )
+			if not (loc[0]+0,loc[1]+0,loc[2]+1) in space: sides.append( ZPOS )
+			if not (loc[0]+0,loc[1]+0,loc[2]-1) in space: sides.append( ZNEG )
+			if len(sides) > 0:
+				glPushMatrix()
+				glTranslatef(i,j,k)
+				glScalef(0.5,0.5,0.5)
+				texture = textures[element]
+				glEnable(texture.target)
+				glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+				glBindTexture(texture.target,texture.id)
+				glBegin(GL_QUADS)
+				for side in sides:
+					draw_face(side)
+				glEnd()
+				glPopMatrix()
+	glEndList()
+	return listName
+	
+def updateWorldList(adjusted):
+	global chunks
+	x,y,z = adjusted
+	x = x / grain
+	y = y / grain
+	z = z / grain
+	chunks[(x,y,z)] = makeWorldList(x,y,z,grain)
 
 pyglet.clock.schedule_interval(update, 0.016666)
 rotScale = 0.0025
@@ -211,40 +322,6 @@ def switchMode(newMode):
 		playercontrol = Vec3(0,0,0)
 switchMode(mode)
 
-chunks = {}
-
-def makeWorldList(x,y,z,dimension):
-	listName = hash(repr((x,y,z)))
-	#print (x,y,z)
-	#print listName
-	low = Vec3(x,y,z)*grain
-	hi = Vec3(x+1,y+1,z+1)*grain
-	glNewList(listName,GL_COMPILE)
-	for location, element in space.items():
-		l = Vec3(location[0],location[1],location[2])
-		i,j,k = (l-low).toTuple()
-		if bounds( low, hi, l ):
-			glPushMatrix()
-			glTranslatef(i,j,k)
-			glScalef(0.5,0.5,0.5)
-			texture = textures[element]
-			glEnable(texture.target)
-			glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glBindTexture(texture.target,texture.id)
-			glBegin(GL_QUADS)
-			draw_cube()
-			glEnd()
-			glPopMatrix()
-	glEndList()
-	return listName
-	
-def updateWorldList(adjusted):
-	global chunks
-	x,y,z = adjusted
-	x = x / grain
-	y = y / grain
-	z = z / grain
-	chunks[(x,y,z)] = makeWorldList(x,y,z,grain)
 
 todo = {}
 #print len( space )
@@ -274,11 +351,11 @@ def on_mouse_press(x,y, buttons, modifiers):
 			centre, vacancy = aimpair
 			if buttons & mouse.LEFT:
 				del space[centre]
-				sendMessage("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
+				c.send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
 				updateWorldList(centre)
 			if buttons & mouse.RIGHT:
 				space[vacancy] = plonk
-				sendMessage("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
+				c.send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
 				updateWorldList(vacancy)
 
 newRenderer = True
