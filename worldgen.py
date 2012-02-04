@@ -25,21 +25,16 @@ def within( a, b, distance ):
 	return distance*distance >= ds
 
 def noise( x, level, salt ):
-	n = hashIt( str(x)+'a'+str(level)+'a'+str(salt) )
+	n = hashIt( str(x)+':'+str(level)+str(salt) )
 	n = ( ( n / 64 ) & 127 ) - 63
 	return n
 
-def noise2( x,y, level, salt ):
-	n = hashIt( str(x)+'a'+str(y)+'a'+str(level)+'a'+str(salt) )
-	n = ( ( n / 64 ) & 127 ) - 63
-	return n
-
-h3dlist = {}
+hlist = {}
 def perlin3d( x, y, z, level, minlevel, salt ):
 	global hlist
 	address = str((x,y,z))+','+str(level)+','+str(salt)
 	try:
-		h = h3dlist[ address ]
+		h = hlist[ address ]
 		return h
 	except KeyError:
 		h = 0
@@ -71,7 +66,36 @@ def perlin3d( x, y, z, level, minlevel, salt ):
 			fh = ( l1 * (dm-dz) + l2 * dz ) / dm
 			h += fh
 			h *= 0.5
-		h3dlist[ address ] = h
+		hlist[ address ] = h
+		return h
+		
+def perlin2d( x, y, level, minlevel, salt ):
+	global hlist
+
+	address = str((x,y))+','+str(level)+','+str(salt)
+	try:
+		h = hlist[ address ]
+		return h
+	except KeyError:
+		h = 0
+		for i in range( minlevel, level ):
+			ax = x>>i
+			ay = y>>i
+			ox = ax<<i
+			oy = ay<<i
+			dx = x-ox
+			dy = y-oy
+			dm = 1<<i
+			ah = noise( (ax, ay), i, salt )
+			bh = noise( (ax+1, ay), i, salt )
+			ch = noise( (ax, ay+1), i, salt )
+			dh = noise( (ax+1, ay+1), i, salt )
+			lh = ( ah * (dm-dx) + bh * dx ) / dm
+			hh = ( ch * (dm-dx) + dh * dx ) / dm
+			fh = ( lh * (dm-dy) + hh * dy ) / dm
+			h += fh
+			h *= 0.5
+		hlist[ address ] = h
 		return h
 	
 hlist = {}
@@ -102,9 +126,10 @@ def worldheight( x, salt ):
 ores = {}
 
 def generateworld( location, salt ):
-	value = 0 # stone
+	value = 'stone' # stone
 	x = location[0]
 	y = location[1]
+	z = location[2]
 	originx = x - (( x % 32 + 32 ) % 32 )
 	originy = y - (( y % 32 + 32 ) % 32 )
 	cellx = originx / 32
@@ -113,26 +138,26 @@ def generateworld( location, salt ):
 
 	h = 0
 	if y < 128 or y > -128:
-		h = perlin1( x, 8, salt )
+		h = perlin2d( x,z, 8,4, salt )
 
-	depth = y - h
+	depth = h-y
 	if depth < 0:
-		if y <= 0:
-			value = SKY
+		if y >= 0:
+			value = None
 		else:
-			value = WATER
+			value = 'water'
 	else:
 		if depth < 6:
-			value = DIRT
+			value = 'dirt'
 		if depth < 2:
-			value = GRASS
-		if depth < 3 and y>=0:
-			value = SAND
+			value = 'grass'
+		if depth < 3 and y<0:
+			value = 'sand'
 
 	r = random.Random()
 
 	#if it's currently sky, then it could be a tree
-	if value == SKY and depth > -16:
+	if value == 'sky' and depth > -16:
 		for xa in range( -1, 2 ):
 			cellhash = hashIt( str(cellx+xa)+':'+str(salt) )
 			r.seed( cellhash & 32767 )
@@ -151,7 +176,7 @@ def generateworld( location, salt ):
 				
 		
 	#now, if it's currently stone, it could be an ore... or something else
-	if value == STONE:
+	if value == 'stone':
 		for xa in range( -1, 2 ):
 			for ya in range( -1, 2 ):
 				address = str(cellx+xa)+','+str(celly+ya)+':'+str(salt)
@@ -167,22 +192,22 @@ def generateworld( location, salt ):
 						where2 = (int(r.random()*5)-2,int(r.random()*5)-2)
 						where2 = ( where2[0]+where[0], where2[1]+where[1] )
 						if thing < 0.4:
-							orelist.append( (COAL,where,2,0) )
+							orelist.append( ('coal',where,2,0) )
 						elif thing < 0.6:
-							orelist.append( (IRON,where,2,3) )
+							orelist.append( ('ironore',where,2,3) )
 						elif thing < 0.7:
-							orelist.append( (WATER,where,5,0) )
-							orelist.append( (WATER,where2,4,0) )
+							orelist.append( ('water',where,5,0) )
+							orelist.append( ('water',where2,4,0) )
 						elif thing < 0.8:
-							orelist.append( (LAVA,where,4,10) )
-							orelist.append( (LAVA,where2,3,10) )
+							orelist.append( ('lava',where,4,10) )
+							orelist.append( ('lava',where2,3,10) )
 						elif thing < 0.85:
-							orelist.append( (GOLD,where,4,20) )
+							orelist.append( ('goldore',where,4,20) )
 						elif thing < 0.87:
-							orelist.append( (DIAMOND,where,2,30) )
+							orelist.append( ('diamondore',where,2,30) )
 						else:
-							orelist.append( (CAVE,where,4,0) )
-							orelist.append( (CAVE,where2,4,0) )
+							orelist.append( ('cave',where,4,0) )
+							orelist.append( ('cave',where2,4,0) )
 					ores[ address ] = orelist
 				# now use the orelist
 				for ore in orelist:

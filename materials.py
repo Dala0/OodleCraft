@@ -2,10 +2,12 @@
 
 MAX_ID = 0 # IDs actually start from 1, 0 is assumed to be empty.
 lookup = {}
+reverselookup = {}
 def material( m ):
 	global MAX_ID
 	MAX_ID = MAX_ID + 1
 	lookup[ MAX_ID ] = m
+	reverselookup[ m ] = MAX_ID
 	
 material( 'stone' )
 material( 'dirt' )

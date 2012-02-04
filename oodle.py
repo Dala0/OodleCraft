@@ -33,7 +33,7 @@ for k,val in lookup.items():
 
 cursor = icons['cursor']
 cursortexture = cursor.get_texture()
-	
+
 #drawlists for cutting
 cutList = {}
 cutList[(0,1,0)] = YPOS
@@ -100,7 +100,7 @@ def updateFromNetwork():
 			except:
 				pass
 
-edge = 16
+edge = 8
 genchunks = [ (0,0,0) ]
 donechunks = []
 def getNewChunks( start, excluding ):
@@ -141,9 +141,11 @@ def updateProcGen():
 		#print genlist
 		filled = True
 		for g in genlist:
-			h = density(g[0],g[1],g[2])
-			if h > 0:
-				space[g] = 1
+			val = generateworld(g,'w')
+			#h = density(g[0],g[1],g[2])
+			#if h > 0:
+			if val:
+				space[g] = reverselookup[val]
 				filled = True
 		donechunks.append(chunkToDo)
 		if filled:
@@ -182,7 +184,7 @@ drawable = {}
 
 
 def findIntersectingBlockAndVacancy():
-	return None
+	#return None
 	best = None
 	bestTime = 100
 	genlist = []
@@ -206,20 +208,37 @@ def makeWorldList(x,y,z,dimension):
 	listName = hash(repr((x,y,z)))
 	#print (x,y,z)
 	#print listName
+	WATER = reverselookup['water']
 	low = Vec3(x,y,z)*grain
 	hi = Vec3(x+1,y+1,z+1)*grain
 	glNewList(listName,GL_COMPILE)
 	for loc, element in space.items():
 		l = Vec3(loc[0],loc[1],loc[2])
 		i,j,k = (l-low).toTuple()
+		isWater = element == WATER
 		if bounds( low, hi, l ):
 			sides = []
-			if not (loc[0]+1,loc[1]+0,loc[2]+0) in space: sides.append( XPOS )
-			if not (loc[0]-1,loc[1]+0,loc[2]+0) in space: sides.append( XNEG )
-			if not (loc[0]+0,loc[1]+1,loc[2]+0) in space: sides.append( YPOS )
-			if not (loc[0]+0,loc[1]-1,loc[2]+0) in space: sides.append( YNEG )
-			if not (loc[0]+0,loc[1]+0,loc[2]+1) in space: sides.append( ZPOS )
-			if not (loc[0]+0,loc[1]+0,loc[2]-1) in space: sides.append( ZNEG )
+			xpos = (loc[0]+1,loc[1]+0,loc[2]+0)
+			ypos = (loc[0]+0,loc[1]+1,loc[2]+0)
+			zpos = (loc[0]+0,loc[1]+0,loc[2]+1)
+			xneg = (loc[0]-1,loc[1]-0,loc[2]-0)
+			yneg = (loc[0]-0,loc[1]-1,loc[2]-0)
+			zneg = (loc[0]-0,loc[1]-0,loc[2]-1)
+			if isWater:
+				if not xpos in space: sides.append( XPOS )
+				if not xneg in space: sides.append( XNEG )
+				if not ypos in space: sides.append( YPOS )
+				if not yneg in space: sides.append( YNEG )
+				if not zpos in space: sides.append( ZPOS )
+				if not zneg in space: sides.append( ZNEG )
+			else:
+				if not xpos in space or space[xpos] == WATER: sides.append( XPOS )
+				if not xneg in space or space[xneg] == WATER: sides.append( XNEG )
+				if not ypos in space or space[ypos] == WATER: sides.append( YPOS )
+				if not yneg in space or space[yneg] == WATER: sides.append( YNEG )
+				if not zpos in space or space[zpos] == WATER: sides.append( ZPOS )
+				if not zneg in space or space[zneg] == WATER: sides.append( ZNEG )
+			
 			if len(sides) > 0:
 				glPushMatrix()
 				glTranslatef(i,j,k)
