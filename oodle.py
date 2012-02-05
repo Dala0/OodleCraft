@@ -17,6 +17,15 @@ from worldgen import *
 import netcore
 c = netcore.netcore()
 
+class playerStruct:
+	pos = Vec3(0,0,0)
+	pitch = 0
+	yaw = 0
+	
+players = {}
+import getpass
+username = getpass.getuser()
+
 arial = font.load('Arial', 12, bold=True, italic=False)
 text = 'Hello, world!'
 glyphs = arial.get_glyphs(text)
@@ -70,7 +79,7 @@ def updateFromNetwork():
 	while len( mess ) > 0:
 		m = mess[0]
 		mess = mess[1:]
-		print m
+		#print m
 		if m[0]=='d':
 			try:
 				print "delete"
@@ -97,6 +106,20 @@ def updateFromNetwork():
 					print "where is was empty"
 					space[pos] = mat
 					updateWorldList(pos)
+			except:
+				pass
+		if m[0]=='p':
+			try:
+				vals = m[1:].split(',')
+				pos = Vec3(vals[0],vals[1],vals[2])
+				pitch = vals[3]
+				yaw = vals[4]
+				name = vals[5]
+				player = playerStruct()
+				player.pos = pos
+				player.pitch = pitch
+				player.yaw = yaw
+				players[name] = player
 			except:
 				pass
 
@@ -152,8 +175,10 @@ def updateProcGen():
 			updateWorldList(genlist[0])
 			newchunks = getNewChunks(chunkToDo,genchunks+donechunks)
 			genchunks = genchunks + newchunks
-	
 
+def netpush(dt):
+	c.send("p"+str(playerpos.x)+','+str(playerpos.y)+','+str(playerpos.z)+','+str(playeraimpitch)+','+str(playeraimyaw)+','+str(username))
+				
 def update(dt):
 	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside
 
@@ -290,6 +315,7 @@ def updateWorldList(adjusted):
 	chunks[(x,y,z)] = makeWorldList(x,y,z,grain)
 
 pyglet.clock.schedule_interval(update, 0.016666)
+pyglet.clock.schedule_interval(netpush, 0.1)
 
 rotScale = 0.0025
 
@@ -384,6 +410,14 @@ def on_mouse_press(x,y, buttons, modifiers):
 				updateWorldList(vacancy)
 
 newRenderer = True
+
+def changeMaterial( inc ):
+	global plonk
+	plonk = plonk - inc
+	while plonk < 1:
+		plonk = plonk + MAX_ID
+	while plonk > MAX_ID:
+		plonk = plonk - MAX_ID
 	
 @window.event
 def on_key_press(symbol, modifiers):
@@ -409,6 +443,10 @@ def on_key_press(symbol, modifiers):
 			plonk = 3
 		if symbol == key.F1:
 			newRenderer = not newRenderer
+		if symbol == key.LEFT:
+			changeMaterial(-1)
+		if symbol == key.RIGHT:
+			changeMaterial(1)
 	if symbol == key.TAB:
 		switchMode( 1 - mode )
 
@@ -487,7 +525,14 @@ def on_draw():
 		glScalef(0.5,0.5,0.5)
 		glColor4f(1.0,0.0,0.0,0.5)
 		glCallList(cutList[direc])
-		glPopMatrix()		
+		glPopMatrix()
+		
+	for name, player in players.items():
+		glPushMatrix()
+		glTranslatef(player.pos.x,player.pos.y,player.pos.z)
+		glCallList(CUBE)
+		glPopMatrix()
+	
 
 	glMatrixMode(GL_PROJECTION)
 	glLoadIdentity()
