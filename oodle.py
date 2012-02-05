@@ -182,24 +182,50 @@ def update(dt):
 
 drawable = {}
 
+def tadd(a,b):
+	return tuple(map(lambda t: t[0]+t[1],zip(a,b)))
+def tsub(a,b):
+	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
+def tdiv(a,b):
+	return tuple(map(lambda t: t[0]/t[1],zip(a,b)))
+def tmul(a,b):
+	return tuple(map(lambda t: t[0]*t[1],zip(a,b)))
 
 def findIntersectingBlockAndVacancy():
 	#return None
-	best = None
-	bestTime = 100
-	genlist = []
-	for cube,val in space.items():
-		#for cube in genlist:
-		test = intersects( cube, playerpos, playeraim )
-		if test:
-			time,diff = test
-			if best and bestTime > time:
-				best = None
-			if not best:
-				dest = (cube[0]+diff[0],cube[1]+diff[1],cube[2]+diff[2])
-				best = (cube,dest)
-				bestTime=time
-	return best
+	start = (playerpos+Vec3(0.5,0.5,0.5)).toTuple()
+	startcell = (int(start[0]),int(start[1]),int(start[2]))
+	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
+
+	direc = playeraim.toTuple()
+	current = tsub( start, startcell )
+	current = tuple(map(lambda t: [1-t[0],t[0]][t[1]<0], zip(current,direc)))
+	move = tuple(map(lambda t: [1,-1][t<0], direc))
+	advance = tuple(map(lambda t: [t,-t][t<0], direc))
+	times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
+	
+	currentcell = startcell
+	
+	time = 0
+	while time < 10:
+		amount = times[2]
+		choice = (0,0,move[2])
+		if times[0] < times[1] and times[0] < times[2]:
+			amount = times[0]
+			choice = (move[0],0,0)
+		elif times[1] < times[2]:
+			amount = times[1]
+			choice = (0,move[1],0)
+		amount = amount + 0.001
+		current = tuple(map(lambda t: t[0]-t[1]*amount, zip(current,advance)))
+		current = tuple(map(lambda t: [t,t+1][t<=0], current))
+		nextcell = tadd( currentcell,choice )
+		if nextcell in space:
+			return nextcell, currentcell
+		currentcell = nextcell
+		time = time + amount
+		times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
+	return None
 
 #updateProcGen()
 chunks = {}
@@ -264,6 +290,7 @@ def updateWorldList(adjusted):
 	chunks[(x,y,z)] = makeWorldList(x,y,z,grain)
 
 pyglet.clock.schedule_interval(update, 0.016666)
+
 rotScale = 0.0025
 
 
