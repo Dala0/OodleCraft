@@ -316,9 +316,6 @@ def updateWorldList(adjusted):
 pyglet.clock.schedule_interval(update, 0.016666)
 pyglet.clock.schedule_interval(netpush, 0.1)
 
-rotScale = 0.0025
-
-
 filename = "space.sav"
 
 class LoadStruct:
@@ -362,6 +359,7 @@ window = pyglet.window.Window()
 width,height = window.get_size()
 print width, height
 mode = 0
+window.set_exclusive_mouse(True)
 def switchMode():
 	global mode,playercontrol
 	mode = 1-mode
@@ -385,30 +383,6 @@ del todo
 
 #chunks[(0,0,0)] = makeWorldList(0,0,0,grain)
 
-@window.event
-def on_mouse_motion(x, y, dx, dy):
-	global playeraimyaw,playeraimpitch
-	if mode == 0:
-		playeraimyaw = playeraimyaw - dx * rotScale
-		playeraimpitch = playeraimpitch + dy * rotScale
-
-@window.event
-def on_mouse_press(x,y, buttons, modifiers):
-	global space
-	if mode == 0:
-		if aimpair:
-			centre, vacancy = aimpair
-			if buttons & mouse.LEFT:
-				del space[centre]
-				c.send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
-				updateWorldList(centre)
-			if buttons & mouse.RIGHT:
-				space[vacancy] = plonk
-				c.send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
-				updateWorldList(vacancy)
-
-newRenderer = True
-
 def changeMaterial( inc ):
 	global plonk
 	plonk = plonk - inc
@@ -416,6 +390,34 @@ def changeMaterial( inc ):
 		plonk = plonk + MAX_ID
 	while plonk > MAX_ID:
 		plonk = plonk - MAX_ID
+
+def changeaim( yaw, pitch ):
+	global playeraimyaw, playeraimpitch
+	playeraimyaw = playeraimyaw + yaw
+	playeraimpitch = playeraimpitch + pitch
+	print playeraimyaw
+	PI = 3.141
+	if playeraimpitch < -PI/2:
+		playeraimpitch = -PI/2
+	if playeraimpitch > PI/2:
+		playeraimpitch = PI/2
+	if playeraimyaw < -PI:
+		playeraimyaw = playeraimyaw + PI*2
+	if playeraimyaw > PI:
+		playeraimyaw = playeraimyaw - PI*2
+		
+
+@window.event
+def on_mouse_motion(x, y, dx, dy):
+	game_on_mouse_motion(globals(), x, y, dx, dy )
+
+@window.event
+def on_mouse_drag(x, y, dx, dy):
+	game_on_mouse_motion(globals(), x, y, dx, dy )
+
+@window.event
+def on_mouse_press(x,y, buttons, modifiers):
+	game_on_mouse_press(globals(), x, y, buttons, modifiers)
 
 from controls import *
 	

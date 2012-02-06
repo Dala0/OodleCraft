@@ -37,7 +37,26 @@ def game_on_key_release(scope,symbol, modifiers):
 			scope['playercontrol'].z = 0
 		if symbol == key.SPACE or symbol == key.LSHIFT:
 			scope['playercontrol'].y = 0
+
+def game_on_mouse_motion( scope, x, y, dx, dy ):
+	rotScale = 0.0025
+	if scope['mode'] == 0:
+		scope['changeaim'](- dx * rotScale, dy * rotScale )
+
+def game_on_mouse_press(scope, x, y, buttons, modifiers):
+	if scope['mode'] == 0:
+		if scope['aimpair']:
+			centre, vacancy = scope['aimpair']
+			if buttons & mouse.LEFT:
+				del scope['space'][centre]
+				scope['c'].send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
+				scope['updateWorldList'](centre)
+			if buttons & mouse.RIGHT:
+				plonk = scope['plonk']
+				scope['space'][vacancy] = plonk
+				scope['c'].send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
+				scope['updateWorldList'](vacancy)
 			
 def game_on_mouse_scroll(scope,x, y, scroll_x, scroll_y):
-	scope['changeMaterial'](-scroll_y)
+	scope['changeMaterial'](scroll_y)
 
