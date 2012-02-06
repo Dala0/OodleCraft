@@ -1,7 +1,5 @@
 from pyglet.gl import *
 from pyglet import image
-from pyglet.window import key
-from pyglet.window import mouse
 from pyglet import font
 from pyglet.font import GlyphString
 
@@ -15,6 +13,7 @@ from materials import *
 from worldgen import *
 
 import netcore
+
 c = netcore.netcore()
 
 class playerStruct:
@@ -365,15 +364,14 @@ window = pyglet.window.Window()
 width,height = window.get_size()
 print width, height
 mode = 0
-def switchMode(newMode):
+def switchMode():
 	global mode,playercontrol
-	mode = newMode
+	mode = 1-mode
 	if mode == 0:
 		window.set_exclusive_mouse(True)
 	else:
 		window.set_exclusive_mouse(False)
 		playercontrol = Vec3(0,0,0)
-switchMode(mode)
 
 
 def refreshFor( cells ):
@@ -422,160 +420,26 @@ def changeMaterial( inc ):
 		plonk = plonk + MAX_ID
 	while plonk > MAX_ID:
 		plonk = plonk - MAX_ID
+
+from controls import *
 	
 @window.event
 def on_key_press(symbol, modifiers):
-	global plonk,newRenderer
-	if mode == 0:
-		if symbol == key.A:
-			playercontrol.x = 1
-		if symbol == key.D:
-			playercontrol.x = -1
-		if symbol == key.W:
-			playercontrol.z = 1
-		if symbol == key.S:
-			playercontrol.z = -1
-		if symbol == key.SPACE:
-			playercontrol.y = 1
-		if symbol == key.LSHIFT:
-			playercontrol.y = -1
-		if symbol == key._1:
-			plonk = 1
-		if symbol == key._2:
-			plonk = 2
-		if symbol == key._3:
-			plonk = 3
-		if symbol == key.F1:
-			newRenderer = not newRenderer
-		if symbol == key.LEFT:
-			changeMaterial(-1)
-		if symbol == key.RIGHT:
-			changeMaterial(1)
-	if symbol == key.TAB:
-		switchMode( 1 - mode )
+	game_on_key_press(globals(),symbol, modifiers)
 
 @window.event
 def on_key_release(symbol, modifiers):
-	if mode == 0:
-		if symbol == key.A or symbol == key.D:
-			playercontrol.x = 0
-		if symbol == key.W or symbol == key.S:
-			playercontrol.z = 0
-		if symbol == key.SPACE or symbol == key.LSHIFT:
-			playercontrol.y = 0
-			
+	game_on_key_release(globals(),symbol, modifiers)
+
 @window.event
 def on_mouse_scroll(x, y, scroll_x, scroll_y):
-	global plonk
-	plonk = plonk - scroll_y
-	while plonk < 1:
-		plonk = plonk + MAX_ID
-	while plonk > MAX_ID:
-		plonk = plonk - MAX_ID
+	game_on_mouse_scroll(globals(),x, y, scroll_x, scroll_y)
 
+from drawing import *
+	
 @window.event
 def on_draw():
-	global t,shader
-
-	glEnable(GL_DEPTH_TEST)
-	#shader.bind()
-	glEnable(GL_BLEND)
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-	glMatrixMode(GL_PROJECTION)
-	glLoadIdentity()
-	gluPerspective(70,width*1.0/height,0.01,1000)
-	targetLook = playerpos + playeraim
-	gluLookAt(playerpos.x,playerpos.y,playerpos.z, targetLook.x,targetLook.y,targetLook.z, 0,1,0)
-
-	glClearColor(0.5, 0.8, 0.9, 1.0)
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-
-	glMatrixMode(GL_MODELVIEW)
-
-	# fallback
-
-	glColor3f(1,1,1)
-
-	glLoadIdentity()
-	# the elements of space
-
-	if newRenderer:
-		for location, element in chunks.items():
-			glPushMatrix()
-			i,j,k = location[0],location[1],location[2]
-			glTranslatef(i*grain,j*grain,k*grain)
-			glCallList(element)
-			glPopMatrix()
-	else:
-		for location, element in space.items():
-			glPushMatrix()
-			i,j,k = location[0],location[1],location[2]
-			glTranslatef(i,j,k)
-			glScalef(0.5,0.5,0.5)
-			#glColor4f(1.0,0.0,1.0,1.0)
-			texture = textures[element]
-			glEnable(texture.target)
-			glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glBindTexture(texture.target,texture.id)
-			glCallList(CUBE)
-			glPopMatrix()
-	if aimpair:
-		glPushMatrix()
-		loc = aimpair[0]
-		dest = aimpair[1]
-		direc = ( dest[0]-loc[0], dest[1]-loc[1], dest[2]-loc[2] )
-		i,j,k = loc[0],loc[1],loc[2]
-		glTranslatef(i,j,k)
-		glScalef(0.5,0.5,0.5)
-		glColor4f(1.0,0.0,0.0,0.5)
-		glCallList(cutList[direc])
-		glPopMatrix()
-		
-	for name, player in players.items():
-		glPushMatrix()
-		glTranslatef(player.pos.x,player.pos.y,player.pos.z)
-		glCallList(CUBE)
-		glPopMatrix()
-	
-
-	glMatrixMode(GL_PROJECTION)
-	glLoadIdentity()
-	w = width / 2
-	h = height / 2
-	glOrtho(-w,w,-h,h,-1,1);
-	glMatrixMode(GL_MODELVIEW)
-	glLoadIdentity()
-	glColor4f(1.0,1.0,1.0,0.9)
-	glScalef(16.0,16.0,0.1)
-	glEnable(cursortexture.target)
-	glBindTexture(cursortexture.target,cursortexture.id)
-	glCallList(ZNEG)
-
-	glDisable(GL_DEPTH_TEST)
-	glLoadIdentity()
-	glTranslatef(8+16-w,8+16-h,0)
-	glScalef(16.0,16.0,0.1)
-	texture = textures[plonk]
-	glEnable(texture.target)
-	glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-	glBindTexture(texture.target,texture.id)
-	glCallList(ZNEG)
-	
-	glLoadIdentity()
-	glTranslatef(8+16+16+8-w,8+16-h,0)
-	glPushMatrix()
-	glColor4f(0,0,0,0.5)
-	glyph_string.draw()
-	glTranslatef(0,2,0)
-	glyph_string.draw()
-	glTranslatef(2,0,0)
-	glyph_string.draw()
-	glTranslatef(0,-2,0)
-	glyph_string.draw()
-	glPopMatrix()		
-	glTranslatef(1,1,0)
-	glColor4f(1.0,1.0,1.0,1.0)
-	glyph_string.draw()
+	game_on_draw(globals())
 
 pyglet.app.run()
 save()
