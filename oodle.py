@@ -11,36 +11,51 @@ from glPrims import *
 from assets import *
 from materials import *
 from worldgen import *
+from time import time
 
+class GameState(dict):
+	def __init__(self, *args):
+		dict.__init__(self, args)
+
+	# these functions let state-functions access items as if they were elements
+	def __getattr__(self, attr):
+		val = dict.__getitem__(self, attr)
+		return val
+	def __setattr__(self, attr, value):
+		dict.__setitem__(self, attr, value)
+        
+state = GameState()
+filloutPrims( state )
+        
 import netcore
 
-c = netcore.netcore()
+state.c = netcore.netcore()
 
 class playerStruct:
 	pos = Vec3(0,0,0)
 	pitch = 0
 	yaw = 0
 	
-players = {}
+state.players = {}
 import getpass
-username = getpass.getuser()
+state.username = getpass.getuser()
 
 arial = font.load('Arial', 12, bold=True, italic=False)
 text = 'Hello, world!'
 glyphs = arial.get_glyphs(text)
-glyph_string = GlyphString(text, glyphs)
+state.glyph_string = GlyphString(text, glyphs)
 
 
 #constants
-grain = 16
+state.grain = 16
 
 #images / textures
-textures = {}
+state.textures = {}
 for k,val in lookup.items():
-	textures[k] = icons[val].get_texture()
+	state.textures[k] = icons[val].get_texture()
 
 cursor = icons['cursor']
-cursortexture = cursor.get_texture()
+state.cursortexture = cursor.get_texture()
 
 #drawlists for cutting
 cutList = {}
@@ -50,17 +65,18 @@ cutList[(1,0,0)] = XPOS
 cutList[(-1,0,0)] = XNEG
 cutList[(0,0,1)] = ZPOS
 cutList[(0,0,-1)] = ZNEG
+state.cutList = cutList
 
 #player globals
-playerpos = Vec3(0,0,-5)
-playervel = Vec3(0,0,0)
-playercontrol = Vec3(0,0,0)
-playeraim = Vec3(0,0,1)
-playerflataim = Vec3(0,0,1)
-playerflatside = Vec3(1,0,0)
-playeraimyaw = 0
-playeraimpitch = 0
-aimpair = ((0,0,0),(0,1,0))
+state.playerpos = Vec3(0,0,-5)
+state.playervel = Vec3(0,0,0)
+state.playercontrol = Vec3(0,0,0)
+state.playeraim = Vec3(0,0,1)
+state.playerflataim = Vec3(0,0,1)
+state.playerflatside = Vec3(1,0,0)
+state.playeraimyaw = 0
+state.playeraimpitch = 0
+state.aimpair = ((0,0,0),(0,1,0))
 
 #x = 0
 #d = 1
@@ -68,13 +84,12 @@ aimpair = ((0,0,0),(0,1,0))
 
 acceleration = 0.01
 
-space = {}
-plonk = 1
-space[(0,0,0)] = plonk
+state.space = {}
+state.plonk = 1
+state.space[(0,0,0)] = state.plonk
 
-def updateFromNetwork():
-	global space
-	mess = c.recvall()
+def updateFromNetwork(s):
+	mess = s.c.recvall()
 	while len( mess ) > 0:
 		m = mess[0]
 		mess = mess[1:]
@@ -86,10 +101,10 @@ def updateFromNetwork():
 				print "from"
 				pos = (int(pos[0]),int(pos[1]),int(pos[2]))
 				print pos
-				if pos in space:
+				if pos in s.space:
 					print "was there, deleted it"
-					del space[pos]
-					updateWorldList(pos)
+					del s.space[pos]
+					s.updateWorldList(pos)
 			except:
 				pass
 		if m[0]=='a':
@@ -101,10 +116,10 @@ def updateFromNetwork():
 				print "a ",mat
 				pos = (int(pos[1]),int(pos[2]),int(pos[3]))
 				print "at ",pos
-				if not pos in space:
+				if not pos in s.space:
 					print "where is was empty"
-					space[pos] = mat
-					updateWorldList(pos)
+					s.space[pos] = mat
+					s.updateWorldList(pos)
 			except:
 				pass
 		if m[0]=='p':
@@ -118,7 +133,8 @@ def updateFromNetwork():
 				player.pos = pos
 				player.pitch = pitch
 				player.yaw = yaw
-				players[name] = player
+				player.lastSeen = time()
+				s.players[name] = player
 			except:
 				pass
 
@@ -176,35 +192,41 @@ def updateProcGen():
 			genchunks = genchunks + newchunks
 
 def netpush(dt):
-	c.send("p"+str(playerpos.x)+','+str(playerpos.y)+','+str(playerpos.z)+','+str(playeraimpitch)+','+str(playeraimyaw)+','+str(username))
+	state.c.send("p"+str(state.playerpos.x)+','+str(state.playerpos.y)+','+str(state.playerpos.z)+','+str(state.playeraimpitch)+','+str(state.playeraimyaw)+','+str(state.username))
 				
 def update(dt):
 	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside
 
 	#update camera aim
-	sy,cy = sin(playeraimyaw),cos(playeraimyaw)
-	sp,cp = sin(playeraimpitch),cos(playeraimpitch)
-	playeraim = Vec3( cp * sy, sp, cp * cy )
-	playerflataim = Vec3( sy, 0, cy )
-	playerflatside = playerflataim.crossY()
+	sy,cy = sin(state.playeraimyaw),cos(state.playeraimyaw)
+	sp,cp = sin(state.playeraimpitch),cos(state.playeraimpitch)
+	state.playeraim = Vec3( cp * sy, sp, cp * cy )
+	state.playerflataim = Vec3( sy, 0, cy )
+	state.playerflatside = state.playerflataim.crossY()
 
 	#update physics
-	realforward = playerflataim * playercontrol.z
-	realside = playerflatside * playercontrol.x
+	realforward = state.playerflataim * state.playercontrol.z
+	realside = state.playerflatside * state.playercontrol.x
 	realcontrol = realforward + realside
-	realcontrol.y = playercontrol.y
-	diff = realcontrol - playervel
+	realcontrol.y = state.playercontrol.y
+	diff = realcontrol - state.playervel
 	acc = acceleration
-	if playervel.dot( realcontrol ) < 0:
+	if state.playervel.dot( realcontrol ) < 0:
 		acc = acc * 2
 	diff.clampmag(acc)
-	playervel = playervel + diff
-	playerpos = playerpos + playervel
-	aimpair = findIntersectingBlockAndVacancy()
-	updateFromNetwork()
+	state.playervel = state.playervel + diff
+	state.playerpos = state.playerpos + state.playervel
+	state.aimpair = findIntersectingBlockAndVacancy()
+	updateFromNetwork(state)
 	#updateProcGen()
+	currentTime = time()
+	newdic = {}
+	for key, value in state.players.items():
+		if value.lastSeen+4 < currentTime:
+			newdic[ key ] = value
+	state.players = newdic
 
-drawable = {}
+state.drawable = {}
 
 def tadd(a,b):
 	return tuple(map(lambda t: t[0]+t[1],zip(a,b)))
@@ -217,11 +239,11 @@ def tmul(a,b):
 
 def findIntersectingBlockAndVacancy():
 	#return None
-	start = (playerpos+Vec3(0.5,0.5,0.5)).toTuple()
+	start = (state.playerpos+Vec3(0.5,0.5,0.5)).toTuple()
 	startcell = (int(start[0]),int(start[1]),int(start[2]))
 	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 
-	direc = playeraim.toTuple()
+	direc = state.playeraim.toTuple()
 	current = tsub( start, startcell )
 	current = tuple(map(lambda t: [1-t[0],t[0]][t[1]<0], zip(current,direc)))
 	move = tuple(map(lambda t: [1,-1][t<0], direc))
@@ -244,7 +266,7 @@ def findIntersectingBlockAndVacancy():
 		current = tuple(map(lambda t: t[0]-t[1]*amount, zip(current,advance)))
 		current = tuple(map(lambda t: [t,t+1][t<=0], current))
 		nextcell = tadd( currentcell,choice )
-		if nextcell in space:
+		if nextcell in state.space:
 			return nextcell, currentcell
 		currentcell = nextcell
 		time = time + amount
@@ -252,17 +274,17 @@ def findIntersectingBlockAndVacancy():
 	return None
 
 #updateProcGen()
-chunks = {}
+state.chunks = {}
 
-def makeWorldList(x,y,z,dimension):
+def makeWorldList(state,x,y,z):
 	listName = hash(repr((x,y,z)))
 	#print (x,y,z)
 	#print listName
 	WATER = reverselookup['water']
-	low = Vec3(x,y,z)*grain
-	hi = Vec3(x+1,y+1,z+1)*grain
+	low = Vec3(x,y,z)*state.grain
+	hi = Vec3(x+1,y+1,z+1)*state.grain
 	glNewList(listName,GL_COMPILE)
-	for loc, element in space.items():
+	for loc, element in state.space.items():
 		l = Vec3(loc[0],loc[1],loc[2])
 		i,j,k = (l-low).toTuple()
 		isWater = element == WATER
@@ -275,25 +297,25 @@ def makeWorldList(x,y,z,dimension):
 			yneg = (loc[0]-0,loc[1]-1,loc[2]-0)
 			zneg = (loc[0]-0,loc[1]-0,loc[2]-1)
 			if isWater:
-				if not xpos in space: sides.append( XPOS )
-				if not xneg in space: sides.append( XNEG )
-				if not ypos in space: sides.append( YPOS )
-				if not yneg in space: sides.append( YNEG )
-				if not zpos in space: sides.append( ZPOS )
-				if not zneg in space: sides.append( ZNEG )
+				if not xpos in state.space: sides.append( XPOS )
+				if not xneg in state.space: sides.append( XNEG )
+				if not ypos in state.space: sides.append( YPOS )
+				if not yneg in state.space: sides.append( YNEG )
+				if not zpos in state.space: sides.append( ZPOS )
+				if not zneg in state.space: sides.append( ZNEG )
 			else:
-				if not xpos in space or space[xpos] == WATER: sides.append( XPOS )
-				if not xneg in space or space[xneg] == WATER: sides.append( XNEG )
-				if not ypos in space or space[ypos] == WATER: sides.append( YPOS )
-				if not yneg in space or space[yneg] == WATER: sides.append( YNEG )
-				if not zpos in space or space[zpos] == WATER: sides.append( ZPOS )
-				if not zneg in space or space[zneg] == WATER: sides.append( ZNEG )
+				if not xpos in state.space or state.space[xpos] == WATER: sides.append( XPOS )
+				if not xneg in state.space or state.space[xneg] == WATER: sides.append( XNEG )
+				if not ypos in state.space or state.space[ypos] == WATER: sides.append( YPOS )
+				if not yneg in state.space or state.space[yneg] == WATER: sides.append( YNEG )
+				if not zpos in state.space or state.space[zpos] == WATER: sides.append( ZPOS )
+				if not zneg in state.space or state.space[zneg] == WATER: sides.append( ZNEG )
 			
 			if len(sides) > 0:
 				glPushMatrix()
 				glTranslatef(i,j,k)
 				glScalef(0.5,0.5,0.5)
-				texture = textures[element]
+				texture = state.textures[element]
 				glEnable(texture.target)
 				glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 				glBindTexture(texture.target,texture.id)
@@ -304,16 +326,18 @@ def makeWorldList(x,y,z,dimension):
 				glPopMatrix()
 	glEndList()
 	return listName
+state.makeWorldList = makeWorldList
 	
-def updateWorldList(adjusted):
-	global chunks
+def updateWorldList(state,adjusted):
+	#global chunks
 	x,y,z = adjusted
 	potential = []
 	for X in range(x-1,x+2):
 		for Y in range( y-1, y+2 ):
 			for Z in range( z-1, z+2):
 				potential.append((X,Y,Z))
-	refreshFor( potential )
+	refreshFor( state, potential )
+state.updateWorldList = updateWorldList
 
 pyglet.clock.schedule_interval(update, 0.016666)
 pyglet.clock.schedule_interval(netpush, 0.1)
@@ -329,10 +353,10 @@ class LoadStruct:
 def save():
 	try:
 		stuff = LoadStruct()
-		stuff.space = space
-		stuff.playerpos = playerpos
-		stuff.playeraimyaw = playeraimyaw
-		stuff.playeraimpitch = playeraimpitch
+		stuff.space = state.space
+		stuff.playerpos = state.playerpos
+		stuff.playeraimyaw = state.playeraimyaw
+		stuff.playeraimpitch = state.playeraimpitch
 		f = open(filename,'wb')
 		pickle.dump(stuff,f)
 		f.close()
@@ -347,10 +371,10 @@ try:
 		stuff = pickle.loads(d)
 	except ImportError:
 		stuff = pickle.loads(d.replace('\n','\r\n'))
-	space = stuff.space
-	if stuff.playerpos: playerpos = stuff.playerpos
-	if stuff.playeraimyaw: playeraimyaw = stuff.playeraimyaw
-	if stuff.playeraimpitch: playeraimpitch = stuff.playeraimpitch
+	state.space = stuff.space
+	if stuff.playerpos: state.playerpos = stuff.playerpos
+	if stuff.playeraimyaw: state.playeraimyaw = stuff.playeraimyaw
+	if stuff.playeraimpitch: state.playeraimpitch = stuff.playeraimpitch
 	update(0)
 except IOError:
 	pass
@@ -358,90 +382,87 @@ except IOError:
 
 # Direct OpenGL commands to this window.
 window = pyglet.window.Window()
-width,height = window.get_size()
-print width, height
-mode = 0
+state.width,state.height = window.get_size()
+print state.width, state.height
+state.mode = 0
 window.set_exclusive_mouse(True)
-def switchMode():
-	global mode,playercontrol
-	mode = 1-mode
-	if mode == 0:
+def switchMode(state):
+	state.mode = 1-state.mode
+	if state.mode == 0:
 		window.set_exclusive_mouse(True)
 	else:
 		window.set_exclusive_mouse(False)
-		playercontrol = Vec3(0,0,0)
+		state.playercontrol = Vec3(0,0,0)
+state.switchMode = switchMode
 
-
-def refreshFor( cells ):
-	global chunks, grain
+def refreshFor( state, cells ):
 	todo = {}
 	#print len( space )
 	for k in cells:
-		t=(int(k[0]/grain),int(k[1]/grain),int(k[2]/grain))
+		t=(int(k[0]/state.grain),int(k[1]/state.grain),int(k[2]/state.grain))
 		todo[t] = True
 	#print len( todo )
 	for k in todo.keys():
 		#print k
-		chunks[k] = makeWorldList(k[0],k[1],k[2],grain)
-refreshFor( space.keys() )
+		state.chunks[k] = state.makeWorldList(state,k[0],k[1],k[2])
+state.refreshFor = refreshFor
+refreshFor( state, state.space.keys() )
 
 #chunks[(0,0,0)] = makeWorldList(0,0,0,grain)
 
-def changeMaterial( inc ):
-	global plonk
-	plonk = plonk - inc
-	while plonk < 1:
-		plonk = plonk + MAX_ID
-	while plonk > MAX_ID:
-		plonk = plonk - MAX_ID
+def changeMaterial( state, inc ):
+	state.plonk = state.plonk - inc
+	while state.plonk < 1:
+		state.plonk = state.plonk + MAX_ID
+	while state.plonk > MAX_ID:
+		state.plonk = state.plonk - MAX_ID
+state.changeMaterial = changeMaterial
 
-def changeaim( yaw, pitch ):
-	global playeraimyaw, playeraimpitch
-	playeraimyaw = playeraimyaw + yaw
-	playeraimpitch = playeraimpitch + pitch
-	print playeraimyaw
+def changeaim( state, yaw, pitch ):
+	state.playeraimyaw = state.playeraimyaw + yaw
+	state.playeraimpitch = state.playeraimpitch + pitch
 	PI = 3.141
-	if playeraimpitch < -PI/2:
-		playeraimpitch = -PI/2
-	if playeraimpitch > PI/2:
-		playeraimpitch = PI/2
-	if playeraimyaw < -PI:
-		playeraimyaw = playeraimyaw + PI*2
-	if playeraimyaw > PI:
-		playeraimyaw = playeraimyaw - PI*2
-		
+	if state.playeraimpitch < -PI/2:
+		state.playeraimpitch = -PI/2
+	if state.playeraimpitch > PI/2:
+		state.playeraimpitch = PI/2
+	if state.playeraimyaw < -PI:
+		state.playeraimyaw = state.playeraimyaw + PI*2
+	if state.playeraimyaw > PI:
+		state.playeraimyaw = state.playeraimyaw - PI*2
+state.changeaim = changeaim
 
 @window.event
 def on_mouse_motion(x, y, dx, dy):
-	game_on_mouse_motion(globals(), x, y, dx, dy )
+	game_on_mouse_motion(state, x, y, dx, dy )
 
 @window.event
-def on_mouse_drag(x, y, dx, dy):
-	game_on_mouse_motion(globals(), x, y, dx, dy )
+def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
+	game_on_mouse_motion(state, x, y, dx, dy )
 
 @window.event
 def on_mouse_press(x,y, buttons, modifiers):
-	game_on_mouse_press(globals(), x, y, buttons, modifiers)
+	game_on_mouse_press(state, x, y, buttons, modifiers)
 
 from controls import *
 	
 @window.event
 def on_key_press(symbol, modifiers):
-	game_on_key_press(globals(),symbol, modifiers)
+	game_on_key_press(state,symbol, modifiers)
 
 @window.event
 def on_key_release(symbol, modifiers):
-	game_on_key_release(globals(),symbol, modifiers)
+	game_on_key_release(state,symbol, modifiers)
 
 @window.event
 def on_mouse_scroll(x, y, scroll_x, scroll_y):
-	game_on_mouse_scroll(globals(),x, y, scroll_x, scroll_y)
+	game_on_mouse_scroll(state,x, y, scroll_x, scroll_y)
 
 from drawing import *
 	
 @window.event
 def on_draw():
-	game_on_draw(globals())
+	game_on_draw(state)
 
 pyglet.app.run()
 save()

@@ -1,7 +1,7 @@
 #drawing
 from pyglet.gl import *
 
-def game_on_draw( scope ):
+def game_on_draw( s ):
 	glEnable(GL_DEPTH_TEST)
 	#shader.bind()
 	glEnable(GL_BLEND)
@@ -9,14 +9,9 @@ def game_on_draw( scope ):
 	glMatrixMode(GL_PROJECTION)
 	glLoadIdentity()
 
-	width = scope['width']
-	height = scope['height']
-
-	gluPerspective(70,width*1.0/height,0.01,1000)
-	playerpos = scope['playerpos']
-	playeraim = scope['playeraim']
-	targetLook = playerpos + playeraim
-	gluLookAt(playerpos.x,playerpos.y,playerpos.z, targetLook.x,targetLook.y,targetLook.z, 0,1,0)
+	gluPerspective(70,s.width*1.0/s.height,0.01,1000)
+	targetLook = s.playerpos + s.playeraim
+	gluLookAt(s.playerpos.x,s.playerpos.y,s.playerpos.z, targetLook.x,targetLook.y,targetLook.z, 0,1,0)
 
 	glClearColor(0.5, 0.8, 0.9, 1.0)
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
@@ -30,78 +25,65 @@ def game_on_draw( scope ):
 	glLoadIdentity()
 	# the elements of space
 
-	grain = scope['grain']
-	chunks = scope['chunks']
-	for location, element in chunks.items():
+	for location, element in s.chunks.items():
 		glPushMatrix()
 		i,j,k = location[0],location[1],location[2]
-		glTranslatef(i*grain,j*grain,k*grain)
+		glTranslatef(i*s.grain,j*s.grain,k*s.grain)
 		glCallList(element)
 		glPopMatrix()
-	aimpair = scope['aimpair']
-	cutList = scope['cutList']
-	if aimpair:
+	if s.aimpair:
 		glPushMatrix()
-		loc = aimpair[0]
-		dest = aimpair[1]
+		loc,dest = s.aimpair
 		direc = ( dest[0]-loc[0], dest[1]-loc[1], dest[2]-loc[2] )
 		i,j,k = loc[0],loc[1],loc[2]
 		glTranslatef(i,j,k)
 		glScalef(0.5,0.5,0.5)
 		glColor4f(1.0,0.0,0.0,0.5)
-		glCallList(cutList[direc])
+		glCallList(s.cutList[direc])
 		glPopMatrix()
 		
-	players = scope['players']
-	for name, player in players.items():
+	for name, player in s.players.items():
 		glPushMatrix()
 		glTranslatef(player.pos.x,player.pos.y,player.pos.z)
-		glCallList(CUBE)
+		glCallList(s.CUBE)
 		glPopMatrix()
 	
-	cursortexture = scope['cursortexture']
-
 	glMatrixMode(GL_PROJECTION)
 	glLoadIdentity()
-	w = width / 2
-	h = height / 2
+	w = s.width / 2
+	h = s.height / 2
 	glOrtho(-w,w,-h,h,-1,1);
 	glMatrixMode(GL_MODELVIEW)
 	glLoadIdentity()
 	glColor4f(1.0,1.0,1.0,0.9)
 	glScalef(16.0,16.0,0.1)
-	glEnable(cursortexture.target)
-	glBindTexture(cursortexture.target,cursortexture.id)
-	glCallList(scope['ZNEG'])
-
-	plonk = scope['plonk']
-	textures = scope['textures']
+	glEnable(s.cursortexture.target)
+	glBindTexture(s.cursortexture.target,s.cursortexture.id)
+	glCallList(s.ZNEG)
 
 	glDisable(GL_DEPTH_TEST)
 	glLoadIdentity()
 	glTranslatef(8+16-w,8+16-h,0)
 	glScalef(16.0,16.0,0.1)
-	texture = textures[plonk]
+	texture = s.textures[s.plonk]
 	glEnable(texture.target)
 	glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 	glBindTexture(texture.target,texture.id)
-	glCallList(scope['ZNEG'])
-	
-	glyph_string = scope['glyph_string']
+	glCallList(s.ZNEG)
 	
 	glLoadIdentity()
 	glTranslatef(8+16+16+8-w,8+16-h,0)
 	glPushMatrix()
 	glColor4f(0,0,0,0.5)
-	glyph_string.draw()
+	s.glyph_string.draw()
 	glTranslatef(0,2,0)
-	glyph_string.draw()
+	s.glyph_string.draw()
 	glTranslatef(2,0,0)
-	glyph_string.draw()
+	s.glyph_string.draw()
 	glTranslatef(0,-2,0)
-	glyph_string.draw()
+	s.glyph_string.draw()
 	glPopMatrix()		
 	glTranslatef(1,1,0)
 	glColor4f(1.0,1.0,1.0,1.0)
-	glyph_string.draw()
+	s.glyph_string.draw()
 
