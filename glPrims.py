@@ -9,6 +9,15 @@ XNEG = 5
 ZPOS = 6
 ZNEG = 7
 
+def filloutPrims( state ):
+	state.CUBE = 1
+	state.YPOS = 2
+	state.YNEG = 3
+	state.XPOS = 4
+	state.XNEG = 5
+	state.ZPOS = 6
+	state.ZNEG = 7
+
 o = 1
 O = 1.01
 
