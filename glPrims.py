@@ -9,15 +9,6 @@ XNEG = 5
 ZPOS = 6
 ZNEG = 7
 
-def filloutPrims( state ):
-	state.CUBE = 1
-	state.YPOS = 2
-	state.YNEG = 3
-	state.XPOS = 4
-	state.XNEG = 5
-	state.ZPOS = 6
-	state.ZNEG = 7
-
 o = 1
 O = 1.01
 
@@ -296,4 +287,15 @@ glTexCoord2f( 0, 1)
 glVertex3f( -o,  o, -O)
 glEnd()
 glEndList()
+
+def filloutPrims( state ):
+	state.CUBE = 1
+	state.YPOS = 2
+	state.YNEG = 3
+	state.XPOS = 4
+	state.XNEG = 5
+	state.ZPOS = 6
+	state.ZNEG = 7
+	state.draw_face = draw_face
+	state.draw_cube = draw_cube
 

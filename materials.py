@@ -9,6 +9,11 @@ def material( m ):
 	lookup[ MAX_ID ] = m
 	reverselookup[ m ] = MAX_ID
 	
+def addmaterials( struct ):
+	struct.MAX_ID = MAX_ID
+	struct.lookup = lookup
+	struct.reverselookup = reverselookup
+	
 material( 'stone' )
 material( 'dirt' )
 material( 'grass' )
