@@ -7,15 +7,18 @@ from math import * # trigonometry
 from vec import *
 from geom import *
 import pickle
-from glPrims import *
+import glPrims
 from assets import *
-from materials import *
+import materials
 from worldgen import *
 from time import time
+
 
 class GameState(dict):
 	def __init__(self, *args):
 		dict.__init__(self, args)
+		dict.__setitem__(self, "timeout", 2 )
+		dict.__setitem__(self, "newarrival", False )
 
 	# these functions let state-functions access items as if they were elements
 	def __getattr__(self, attr):
@@ -25,8 +28,11 @@ class GameState(dict):
 		dict.__setitem__(self, attr, value)
         
 state = GameState()
-filloutPrims( state )
-        
+glPrims.filloutPrims( state )
+materials.addmaterials( state )
+#import procgen
+#procgen.addprocgentostate( state )
+
 import netcore
 
 state.c = netcore.netcore()
@@ -51,7 +57,7 @@ state.grain = 16
 
 #images / textures
 state.textures = {}
-for k,val in lookup.items():
+for k,val in materials.lookup.items():
 	state.textures[k] = icons[val].get_texture()
 
 cursor = icons['cursor']
@@ -59,12 +65,12 @@ state.cursortexture = cursor.get_texture()
 
 #drawlists for cutting
 cutList = {}
-cutList[(0,1,0)] = YPOS
-cutList[(0,-1,0)] = YNEG
-cutList[(1,0,0)] = XPOS
-cutList[(-1,0,0)] = XNEG
-cutList[(0,0,1)] = ZPOS
-cutList[(0,0,-1)] = ZNEG
+cutList[(0,1,0)] = glPrims.YPOS
+cutList[(0,-1,0)] = glPrims.YNEG
+cutList[(1,0,0)] = glPrims.XPOS
+cutList[(-1,0,0)] = glPrims.XNEG
+cutList[(0,0,1)] = glPrims.ZPOS
+cutList[(0,0,-1)] = glPrims.ZNEG
 state.cutList = cutList
 
 #player globals
@@ -93,110 +99,85 @@ def updateFromNetwork(s):
 	while len( mess ) > 0:
 		m = mess[0]
 		mess = mess[1:]
-		#print m
+		if not m[0]=='p':
+			print m
 		if m[0]=='d':
 			try:
-				print "delete"
+				#print "delete"
 				pos = m[1:].split(',')
-				print "from"
+				#print "from"
 				pos = (int(pos[0]),int(pos[1]),int(pos[2]))
-				print pos
+				#print pos
 				if pos in s.space:
-					print "was there, deleted it"
+					#print "was there, deleted it"
 					del s.space[pos]
-					s.updateWorldList(pos)
+					s.updateWorldList(s,pos)
 			except:
 				pass
 		if m[0]=='a':
 			try:
-				print "add"
+				#print "add"
 				pos = m[1:].split(',')
-				print "to"
+				#print "to"
 				mat = int(pos[0])
-				print "a ",mat
+				#print "a ",mat
 				pos = (int(pos[1]),int(pos[2]),int(pos[3]))
-				print "at ",pos
+				#print "at ",pos
 				if not pos in s.space:
-					print "where is was empty"
+					#print "where is was empty"
 					s.space[pos] = mat
-					s.updateWorldList(pos)
+					s.updateWorldList(s,pos)
+			except:
+				pass
+		if m[0]=='i': # informed by other player
+			try:
+				print "i",
+				pos = m[1:].split(',')
+				mat = int(pos[0])
+				pos = (int(pos[1]),int(pos[2]),int(pos[3]))
+				s.space[pos] = mat
+				s.updateWorldList(s,pos)
+			except:
+				pass
+		if m[0]=='f': # finished inform by other player
+			try:
+				print "received data and updating"
+				s.updateFromAllSpace(s)
 			except:
 				pass
 		if m[0]=='p':
 			try:
+				#print "person"
 				vals = m[1:].split(',')
 				pos = Vec3(vals[0],vals[1],vals[2])
+				#print "@",pos
 				pitch = vals[3]
 				yaw = vals[4]
+				#print "pitch:",pitch," yaw:",yaw
 				name = vals[5]
+				#print "called:",name
 				player = playerStruct()
 				player.pos = pos
 				player.pitch = pitch
 				player.yaw = yaw
 				player.lastSeen = time()
+				if not name in s.players:
+					s.newarrival = True
+					print "new arrival : ",name
 				s.players[name] = player
 			except:
 				pass
-
-edge = 8
-genchunks = [ (0,0,0) ]
-donechunks = []
-def getNewChunks( start, excluding ):
-	x,y,z = start
-	potential = [(x+1,y,z),(x-1,y,z),
-		(x,y+1,z),(x,y-1,z),(x,y,z+1),(x,y,z-1)]
-	actual = []
-	for p in potential:
-		if not p in excluding:
-			actual.append(p)
-	return actual
-	
-def density( x, y, z ):
-	return 2*perlin3d(x,y,z,5,1,'') - y*8
-
-def findGoodChunk(chunks):
-	for chunk in chunks:
-		disp = getDisplacementFromCube( chunk, (playerpos*(1.0/edge)).toTuple() )
-		diff = abs(T2V(disp))
-		if diff < 10.0/edge:
-			chunks.remove(chunk)
-			return chunk,chunks
-	return None,chunks
-
-def updateProcGen():
-	global genchunks, space
-	#print "updateProcGen"
-	chunkToDo,genchunks = findGoodChunk(genchunks)
-	if chunkToDo:
-		#print chunkToDo
-		start = tuple( x*edge for x in chunkToDo)
-		#print start
-		genlist = []
-		for x in range(edge):
-			for y in range(edge):
-				for z in range(edge):
-					genlist.append((x+start[0],y+start[1],z+start[2]))
-		#print genlist
-		filled = True
-		for g in genlist:
-			val = generateworld(g,'w')
-			#h = density(g[0],g[1],g[2])
-			#if h > 0:
-			if val:
-				space[g] = reverselookup[val]
-				filled = True
-		donechunks.append(chunkToDo)
-		if filled:
-			updateWorldList(genlist[0])
-			newchunks = getNewChunks(chunkToDo,genchunks+donechunks)
-			genchunks = genchunks + newchunks
+	if s.newarrival:
+		print "sending my data"
+		for key, value in s.space.items():
+			s.c.send("i"+str(value)+','+str(key[0])+','+str(key[1])+','+str(key[2]))
+		s.c.send("f")
+		s.newarrival = False
 
 def netpush(dt):
 	state.c.send("p"+str(state.playerpos.x)+','+str(state.playerpos.y)+','+str(state.playerpos.z)+','+str(state.playeraimpitch)+','+str(state.playeraimyaw)+','+str(state.username))
 				
 def update(dt):
-	global playerpos, playervel, aimpair, playeraim, playerflataim, playerflatside
-
 	#update camera aim
 	sy,cy = sin(state.playeraimyaw),cos(state.playeraimyaw)
 	sp,cp = sin(state.playeraimpitch),cos(state.playeraimpitch)
@@ -222,7 +203,7 @@ def update(dt):
 	currentTime = time()
 	newdic = {}
 	for key, value in state.players.items():
-		if value.lastSeen+4 < currentTime:
+		if value.lastSeen+state.timeout > currentTime:
 			newdic[ key ] = value
 	state.players = newdic
 
@@ -280,7 +261,7 @@ def makeWorldList(state,x,y,z):
 	listName = hash(repr((x,y,z)))
 	#print (x,y,z)
 	#print listName
-	WATER = reverselookup['water']
+	WATER = state.reverselookup['water']
 	low = Vec3(x,y,z)*state.grain
 	hi = Vec3(x+1,y+1,z+1)*state.grain
 	glNewList(listName,GL_COMPILE)
@@ -304,12 +285,12 @@ def makeWorldList(state,x,y,z):
 				if not zpos in state.space: sides.append( ZPOS )
 				if not zneg in state.space: sides.append( ZNEG )
 			else:
-				if not xpos in state.space or state.space[xpos] == WATER: sides.append( XPOS )
-				if not xneg in state.space or state.space[xneg] == WATER: sides.append( XNEG )
-				if not ypos in state.space or state.space[ypos] == WATER: sides.append( YPOS )
-				if not yneg in state.space or state.space[yneg] == WATER: sides.append( YNEG )
-				if not zpos in state.space or state.space[zpos] == WATER: sides.append( ZPOS )
-				if not zneg in state.space or state.space[zneg] == WATER: sides.append( ZNEG )
+				if not xpos in state.space or state.space[xpos] == WATER: sides.append( state.XPOS )
+				if not xneg in state.space or state.space[xneg] == WATER: sides.append( state.XNEG )
+				if not ypos in state.space or state.space[ypos] == WATER: sides.append( state.YPOS )
+				if not yneg in state.space or state.space[yneg] == WATER: sides.append( state.YNEG )
+				if not zpos in state.space or state.space[zpos] == WATER: sides.append( state.ZPOS )
+				if not zneg in state.space or state.space[zneg] == WATER: sides.append( state.ZNEG )
 			
 			if len(sides) > 0:
 				glPushMatrix()
@@ -321,7 +302,7 @@ def makeWorldList(state,x,y,z):
 				glBindTexture(texture.target,texture.id)
 				glBegin(GL_QUADS)
 				for side in sides:
-					draw_face(side)
+					state.draw_face(side)
 				glEnd()
 				glPopMatrix()
 	glEndList()
@@ -336,13 +317,13 @@ def updateWorldList(state,adjusted):
 		for Y in range( y-1, y+2 ):
 			for Z in range( z-1, z+2):
 				potential.append((X,Y,Z))
-	refreshFor( state, potential )
+	state.refreshFor( state, potential )
 state.updateWorldList = updateWorldList
 
 pyglet.clock.schedule_interval(update, 0.016666)
 pyglet.clock.schedule_interval(netpush, 0.1)
 
-filename = "space.sav"
+filename = state.username+".sav"
 
 class LoadStruct:
 	space = {}
@@ -383,7 +364,7 @@ except IOError:
 # Direct OpenGL commands to this window.
 window = pyglet.window.Window()
 state.width,state.height = window.get_size()
-print state.width, state.height
+#print state.width, state.height
 state.mode = 0
 window.set_exclusive_mouse(True)
 def switchMode(state):
@@ -408,14 +389,18 @@ def refreshFor( state, cells ):
 state.refreshFor = refreshFor
 refreshFor( state, state.space.keys() )
 
+def updateFromAllSpace(state):
+	state.refreshFor(state, state.space.keys())
+state.updateFromAllSpace = updateFromAllSpace
+
 #chunks[(0,0,0)] = makeWorldList(0,0,0,grain)
 
 def changeMaterial( state, inc ):
 	state.plonk = state.plonk - inc
 	while state.plonk < 1:
-		state.plonk = state.plonk + MAX_ID
-	while state.plonk > MAX_ID:
-		state.plonk = state.plonk - MAX_ID
+		state.plonk = state.plonk + state.MAX_ID
+	while state.plonk > state.MAX_ID:
+		state.plonk = state.plonk - state.MAX_ID
 state.changeMaterial = changeMaterial
 
 def changeaim( state, yaw, pitch ):
