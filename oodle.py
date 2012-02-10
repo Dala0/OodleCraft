@@ -309,10 +309,12 @@ def makeWorldList(x,y,z,dimension):
 def updateWorldList(adjusted):
 	global chunks
 	x,y,z = adjusted
-	x = x / grain
-	y = y / grain
-	z = z / grain
-	chunks[(x,y,z)] = makeWorldList(x,y,z,grain)
+	potential = []
+	for X in range(x-1,x+2):
+		for Y in range( y-1, y+2 ):
+			for Z in range( z-1, z+2):
+				potential.append((X,Y,Z))
+	refreshFor( potential )
 
 pyglet.clock.schedule_interval(update, 0.016666)
 pyglet.clock.schedule_interval(netpush, 0.1)
@@ -374,16 +376,18 @@ def switchMode(newMode):
 switchMode(mode)
 
 
-todo = {}
-#print len( space )
-for k,v in space.items():
-	t=(int(k[0]/16),int(k[1]/16),int(k[2]/16))
-	todo[t] = True
-#print len( todo )
-for k,v in todo.items():
-	#print k
-	chunks[k] = makeWorldList(k[0],k[1],k[2],grain)
-del todo
+def refreshFor( cells ):
+	global chunks, grain
+	todo = {}
+	#print len( space )
+	for k in cells:
+		t=(int(k[0]/grain),int(k[1]/grain),int(k[2]/grain))
+		todo[t] = True
+	#print len( todo )
+	for k in todo.keys():
+		#print k
+		chunks[k] = makeWorldList(k[0],k[1],k[2],grain)
+refreshFor( space.keys() )
 
 #chunks[(0,0,0)] = makeWorldList(0,0,0,grain)
 
