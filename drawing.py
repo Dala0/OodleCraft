@@ -39,6 +39,9 @@ def game_on_draw( s ):
 		glTranslatef(i,j,k)
 		glScalef(0.5,0.5,0.5)
 		glColor4f(1.0,0.0,0.0,0.5)
+		texture = s.textures[s.plonk]
+		glEnable(texture.target)
+		glBindTexture(texture.target,texture.id)
 		glCallList(s.cutList[direc])
 		glPopMatrix()
 		
@@ -55,11 +58,12 @@ def game_on_draw( s ):
 	glOrtho(-w,w,-h,h,-1,1);
 	glMatrixMode(GL_MODELVIEW)
 	glLoadIdentity()
-	glColor4f(1.0,1.0,1.0,0.9)
-	glScalef(16.0,16.0,0.1)
-	glEnable(s.cursortexture.target)
-	glBindTexture(s.cursortexture.target,s.cursortexture.id)
-	glCallList(s.ZNEG)
+	if s.mode == 0:
+		glColor4f(1.0,1.0,1.0,0.9)
+		glScalef(16.0,16.0,0.1)
+		glEnable(s.cursortexture.target)
+		glBindTexture(s.cursortexture.target,s.cursortexture.id)
+		glCallList(s.ZNEG)
 
 	glDisable(GL_DEPTH_TEST)
 	glLoadIdentity()

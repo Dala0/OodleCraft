@@ -13,7 +13,6 @@ import materials
 from worldgen import *
 from time import time
 
-
 class GameState(dict):
 	def __init__(self, *args):
 		dict.__init__(self, args)
@@ -30,6 +29,7 @@ class GameState(dict):
 state = GameState()
 glPrims.filloutPrims( state )
 materials.addmaterials( state )
+
 #import procgen
 #procgen.addprocgentostate( state )
 
@@ -95,84 +95,87 @@ state.plonk = 1
 state.space[(0,0,0)] = state.plonk
 
 def updateFromNetwork(s):
-	mess = s.c.recvall()
-	while len( mess ) > 0:
-		m = mess[0]
-		mess = mess[1:]
-		if not m[0]=='p':
-			print m
-		if m[0]=='d':
-			try:
-				#print "delete"
-				pos = m[1:].split(',')
-				#print "from"
-				pos = (int(pos[0]),int(pos[1]),int(pos[2]))
-				#print pos
-				if pos in s.space:
-					#print "was there, deleted it"
-					del s.space[pos]
-					s.updateWorldList(s,pos)
-			except:
-				pass
-		if m[0]=='a':
-			try:
-				#print "add"
-				pos = m[1:].split(',')
-				#print "to"
-				mat = int(pos[0])
-				#print "a ",mat
-				pos = (int(pos[1]),int(pos[2]),int(pos[3]))
-				#print "at ",pos
-				if not pos in s.space:
-					#print "where is was empty"
-					s.space[pos] = mat
-					s.updateWorldList(s,pos)
-			except:
-				pass
-		if m[0]=='i': # informed by other player
-			try:
-				print "i",
-				pos = m[1:].split(',')
-				mat = int(pos[0])
-				pos = (int(pos[1]),int(pos[2]),int(pos[3]))
-				s.space[pos] = mat
-				s.updateWorldList(s,pos)
-			except:
-				pass
-		if m[0]=='f': # finished inform by other player
-			try:
-				print "received data and updating"
-				s.updateFromAllSpace(s)
-			except:
-				pass
-		if m[0]=='p':
-			try:
-				#print "person"
-				vals = m[1:].split(',')
-				pos = Vec3(vals[0],vals[1],vals[2])
-				#print "@",pos
-				pitch = vals[3]
-				yaw = vals[4]
-				#print "pitch:",pitch," yaw:",yaw
-				name = vals[5]
-				#print "called:",name
-				player = playerStruct()
-				player.pos = pos
-				player.pitch = pitch
-				player.yaw = yaw
-				player.lastSeen = time()
-				if not name in s.players:
-					s.newarrival = True
-					print "new arrival : ",name
-				s.players[name] = player
-			except:
-				pass
-	if s.newarrival:
-		print "sending my data"
-		for key, value in s.space.items():
-			s.c.send("i"+str(value)+','+str(key[0])+','+str(key[1])+','+str(key[2]))
-		s.c.send("f")
-		s.newarrival = False
+	for peer in s.c.peers:	
+		mess = peer.urecvall()
+		while len( mess ) > 0:
+			m = mess[0]
+			mess = mess[1:]
+			#if not m[0]=='p':
+			#	print m
+			if m[0]=='d':
+				try:
+					#print "delete"
+					pos = m[1:].split(',')
+					#print "from"
+					pos = (int(pos[0]),int(pos[1]),int(pos[2]))
+					#print pos
+					if pos in s.space:
+						#print "was there, deleted it"
+						del s.space[pos]
+						s.updateWorldList(s,pos)
+				except:
+					pass
+			if m[0]=='a':
+				try:
+					#print "add"
+					pos = m[1:].split(',')
+					#print "to"
+					mat = int(pos[0])
+					#print "a ",mat
+					pos = (int(pos[1]),int(pos[2]),int(pos[3]))
+					#print "at ",pos
+					if not pos in s.space:
+						#print "where is was empty"
+						s.space[pos] = mat
+						s.updateWorldList(s,pos)
+				except:
+					pass
+			#if m[0]=='i': # informed by other player
+			#	try:
+			#		#print "i",
+			#		pos = m[1:].split(',')
+			#		mat = int(pos[0])
+			#		pos = (int(pos[1]),int(pos[2]),int(pos[3]))
+			#		s.space[pos] = mat
+			#		s.updateWorldList(s,pos)
+			#	except:
+			#		pass
+			#if m[0]=='f': # finished inform by other player
+			#	try:
+			#		print "received data and updating"
+			#		s.updateFromAllSpace(s)
+			#	except:
+			#		pass
+			if m[0]=='p':
+				try:
+					#print "person"
+					vals = m[1:].split(',')
+					pos = Vec3(vals[0],vals[1],vals[2])
+					#print "@",pos
+					pitch = vals[3]
+					yaw = vals[4]
+					#print "pitch:",pitch," yaw:",yaw
+					name = vals[5]
+					#print "called:",name
+					player = playerStruct()
+					player.pos = pos
+					player.pitch = pitch
+					player.yaw = yaw
+					player.lastSeen = time()
+					if not name in s.players:
+						s.newarrival = True
+						print "new arrival : ",name
+						peer.name = name
+					s.players[name] = player
+				except:
+					pass
+	#if s.newarrival:
+	#	print "sending my data"
+	#	for key, value in s.space.items():
+	#		s.c.send("i"+str(value)+','+str(key[0])+','+str(key[1])+','+str(key[2]))
+	#	s.c.send("f")
+	#	s.newarrival = False
+		
 
 def netpush(dt):
 	state.c.send("p"+str(state.playerpos.x)+','+str(state.playerpos.y)+','+str(state.playerpos.z)+','+str(state.playeraimpitch)+','+str(state.playeraimyaw)+','+str(state.username))
@@ -201,10 +204,15 @@ def update(dt):
 	updateFromNetwork(state)
 	#updateProcGen()
 	currentTime = time()
+	removables = {}
 	newdic = {}
 	for key, value in state.players.items():
 		if value.lastSeen+state.timeout > currentTime:
 			newdic[ key ] = value
+		else:
+			removables[ key ] = value
+	for key, value in removables.items():
+		print "TIMING OUT : ",key
 	state.players = newdic
 
 state.drawable = {}
