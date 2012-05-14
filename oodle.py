@@ -83,6 +83,7 @@ state.playerflataim = Vec3(0,0,1)
 state.playerflatside = Vec3(1,0,0)
 state.playeraimyaw = 0
 state.playeraimpitch = 0
+state.playerradius = 0.4
 state.aimpair = ((0,0,0),(0,1,0))
 
 #x = 0
@@ -200,6 +201,20 @@ def collisionAndResponse():
 	se = (lx+1,ly-1,lz) in state.space
 	nw = (lx,ly-1,lz+1) in state.space
 	ne = (lx+1,ly-1,lz+1) in state.space
+	overlap = 0.5 - state.playerradius 
+	underlap = 1.0 - overlap
+	if dx > underlap:
+		sw = False
+		nw = False
+	if dx < overlap:
+		se = False
+		ne = False
+	if dz > underlap:
+		se = False
+		sw = False
+	if dz < overlap:
+		ne = False
+		nw = False
 	infloor = sw or se or nw or ne
 		
 	if infloor and dy < 0.5:
@@ -263,7 +278,7 @@ def tmul(a,b):
 
 def findIntersectingBlockAndVacancy():
 	#return None
-	start = (state.playerpos+Vec3(0.5,0.5,0.5)).toTuple()
+	start = (state.playerpos+Vec3(0.5,1.5,0.5)).toTuple()
 	startcell = (int(start[0]),int(start[1]),int(start[2]))
 	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 

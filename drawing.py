@@ -11,7 +11,7 @@ def game_on_draw( s ):
 
 	gluPerspective(70,s.width*1.0/s.height,0.01,1000)
 	targetLook = s.playerpos + s.playeraim
-	gluLookAt(s.playerpos.x,s.playerpos.y,s.playerpos.z, targetLook.x,targetLook.y,targetLook.z, 0,1,0)
+	gluLookAt(s.playerpos.x,s.playerpos.y+1,s.playerpos.z, targetLook.x,targetLook.y+1,targetLook.z, 0,1,0)
 
 	glClearColor(0.5, 0.8, 0.9, 1.0)
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
