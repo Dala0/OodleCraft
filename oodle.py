@@ -197,10 +197,10 @@ def collisionAndResponse():
 	dy = pp.y - ly
 	dz = pp.z - lz
 	#do floor
-	sw = (lx,ly-1,lz) in state.space
-	se = (lx+1,ly-1,lz) in state.space
-	nw = (lx,ly-1,lz+1) in state.space
-	ne = (lx+1,ly-1,lz+1) in state.space
+	se = (lx,ly-1,lz) in state.space
+	sw = (lx+1,ly-1,lz) in state.space
+	ne = (lx,ly-1,lz+1) in state.space
+	nw = (lx+1,ly-1,lz+1) in state.space
 	overlap = 0.5 - state.playerradius 
 	underlap = 1.0 - overlap
 	if dx > underlap:
@@ -216,15 +216,39 @@ def collisionAndResponse():
 		ne = False
 		nw = False
 	infloor = sw or se or nw or ne
-		
 	if infloor and dy < 0.5:
 		state.playerpos.y = ly + 0.5
+		dy = pp.y - ly
 		state.playervel.y = max( state.playervel.y, 0 )
-
 	if infloor and not state.flying and state.playercontrol.y > 0.5:
 		state.playervel.y = 0.2
 	#do sides
-	
+	se = (lx,ly,lz) in state.space or (lx,ly+1,lz) in state.space 
+	sw = (lx+1,ly,lz) in state.space or (lx+1,ly+1,lz) in state.space 
+	ne = (lx,ly,lz+1) in state.space or (lx,ly+1,lz+1) in state.space 
+	nw = (lx+1,ly,lz+1) in state.space or (lx+1,ly+1,lz+1) in state.space 
+	print "lx,lz : ",lx,':',dx,',',lz,':',dz," ",nw,ne,sw,se
+	if dx > overlap:
+		if ( nw and dz > 0.5 ) or ( sw and dz < 0.5 ):
+			state.playerpos.x = lx + overlap
+			dx = pp.x - lx
+			state.playervel.x = 0
+	if dx < underlap:
+		if ( ne and dz > 0.5 ) or ( se and dz < 0.5 ):
+			state.playerpos.x = lx + underlap
+			dx = pp.x - lx
+			state.playervel.x = 0
+	if dz > overlap:
+		if ( nw and dx > 0.5 ) or ( ne and dx < 0.5 ):
+			state.playerpos.z = lz + overlap
+			dz = pp.z - lz
+			state.playervel.z = 0
+	if dz < underlap:
+		if ( sw and dx > 0.5 ) or ( se and dx < 0.5 ):
+			state.playerpos.z = lz + underlap
+			dz = pp.z - lz
+			state.playervel.z = 0
+				
 def update(dt):
 	#update camera aim
 	sy,cy = sin(state.playeraimyaw),cos(state.playeraimyaw)
