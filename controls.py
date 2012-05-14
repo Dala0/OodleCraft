@@ -12,6 +12,8 @@ def game_on_key_press(s,symbol, modifiers):
 			s.playercontrol.z = 1
 		if symbol == key.S:
 			s.playercontrol.z = -1
+		if symbol == key.F:
+			s.flying = not s.flying
 		if symbol == key.SPACE:
 			s.playercontrol.y = 1
 		if symbol == key.LSHIFT:

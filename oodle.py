@@ -77,6 +77,7 @@ state.cutList = cutList
 state.playerpos = Vec3(0,0,-5)
 state.playervel = Vec3(0,0,0)
 state.playercontrol = Vec3(0,0,0)
+state.flying = True
 state.playeraim = Vec3(0,0,1)
 state.playerflataim = Vec3(0,0,1)
 state.playerflatside = Vec3(1,0,0)
@@ -180,6 +181,35 @@ def updateFromNetwork(s):
 def netpush(dt):
 	state.c.send("p"+str(state.playerpos.x)+','+str(state.playerpos.y)+','+str(state.playerpos.z)+','+str(state.playeraimpitch)+','+str(state.playeraimyaw)+','+str(state.username))
 				
+def collisionAndResponse():
+	pp = state.playerpos
+	lx = int(pp.x)
+	ly = int(pp.y)
+	lz = int(pp.z)
+	if pp.x < 0:
+		lx = lx - 1
+	if pp.y < 0:
+		ly = ly - 1
+	if pp.z < 0:
+		lz = lz - 1
+	dx = pp.x - lx
+	dy = pp.y - ly
+	dz = pp.z - lz
+	#do floor
+	sw = (lx,ly-1,lz) in state.space
+	se = (lx+1,ly-1,lz) in state.space
+	nw = (lx,ly-1,lz+1) in state.space
+	ne = (lx+1,ly-1,lz+1) in state.space
+	infloor = sw or se or nw or ne
+		
+	if infloor and dy < 0.5:
+		state.playerpos.y = ly + 0.5
+		state.playervel.y = max( state.playervel.y, 0 )
+
+	if infloor and not state.flying and state.playercontrol.y > 0.5:
+		state.playervel.y = 0.2
+	#do sides
+	
 def update(dt):
 	#update camera aim
 	sy,cy = sin(state.playeraimyaw),cos(state.playeraimyaw)
@@ -194,12 +224,17 @@ def update(dt):
 	realcontrol = realforward + realside
 	realcontrol.y = state.playercontrol.y
 	diff = realcontrol - state.playervel
+	if not state.flying:
+		diff.y = 0
 	acc = acceleration
 	if state.playervel.dot( realcontrol ) < 0:
 		acc = acc * 2
 	diff.clampmag(acc)
+	if not state.flying:
+		diff.y = diff.y - dt * 0.7
 	state.playervel = state.playervel + diff
 	state.playerpos = state.playerpos + state.playervel
+	collisionAndResponse()
 	state.aimpair = findIntersectingBlockAndVacancy()
 	updateFromNetwork(state)
 	#updateProcGen()
