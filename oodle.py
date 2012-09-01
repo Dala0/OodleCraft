@@ -1,7 +1,9 @@
+#!/usr/bin/python
 from pyglet.gl import *
 from pyglet import image
 from pyglet import font
 from pyglet.font import GlyphString
+import struct
 
 from math import * # trigonometry
 from vec import *
@@ -38,7 +40,10 @@ import netcore
 state.c = netcore.netcore()
 
 class playerStruct:
-	pos = Vec3(0,0,0)
+	pos2 = Vec3(0,1,0)
+	vel2 = Vec3(0,1,0)
+	pos = Vec3(0,1,0)
+	vel = Vec3(0,1,0)
 	pitch = 0
 	yaw = 0
 	
@@ -227,7 +232,7 @@ def collisionAndResponse():
 	sw = (lx+1,ly,lz) in state.space or (lx+1,ly+1,lz) in state.space 
 	ne = (lx,ly,lz+1) in state.space or (lx,ly+1,lz+1) in state.space 
 	nw = (lx+1,ly,lz+1) in state.space or (lx+1,ly+1,lz+1) in state.space 
-	print "lx,lz : ",lx,':',dx,',',lz,':',dz," ",nw,ne,sw,se
+	#print "lx,lz : ",lx,':',dx,',',lz,':',dz," ",nw,ne,sw,se
 	if dx > overlap:
 		if ( nw and dz > 0.5 ) or ( sw and dz < 0.5 ):
 			state.playerpos.x = lx + overlap
@@ -301,16 +306,21 @@ def tmul(a,b):
 	return tuple(map(lambda t: t[0]*t[1],zip(a,b)))
 
 def findIntersectingBlockAndVacancy():
-	#return None
+	# offset by 0.5 for the grid, then one in Y for the height of the player
 	start = (state.playerpos+Vec3(0.5,1.5,0.5)).toTuple()
-	startcell = (int(start[0]),int(start[1]),int(start[2]))
+	# map to the base grid positions (-0.5 --> -1)
 	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 
+	# get the direction of the ray cast
 	direc = state.playeraim.toTuple()
+	# get the current distance to go in each axis
 	current = tsub( start, startcell )
 	current = tuple(map(lambda t: [1-t[0],t[0]][t[1]<0], zip(current,direc)))
+	# make the move direction per axis
 	move = tuple(map(lambda t: [1,-1][t<0], direc))
+	# make the amount moved in current when moving with time
 	advance = tuple(map(lambda t: [t,-t][t<0], direc))
+	# make the "how long until we cross a boundary" per axis
 	times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
 	
 	currentcell = startcell
@@ -422,6 +432,12 @@ def save():
 		stuff.playeraimpitch = state.playeraimpitch
 		f = open(filename,'wb')
 		pickle.dump(stuff,f)
+		f.close()
+		f = open('bin'+filename,'wb')
+		f.write( struct.pack( "fffff",state.playerpos.x,state.playerpos.y,state.playerpos.z,state.playeraimyaw,state.playeraimpitch) )
+		f.write( struct.pack( "i", len(state.space.keys() ) ) )
+		for key, value in state.space.items():
+			f.write( struct.pack( "iiii",key[0],key[1],key[2],value) )
 		f.close()
 	except IOError:
 		pass

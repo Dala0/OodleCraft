@@ -3,7 +3,7 @@ import sys, time
 import socket
 
 SIOCGIFCONF = 0x8912  #define SIOCGIFCONF
-BYTES = 4096          # Simply define the byte size
+BYTES = 2048  # Simply define the ioctl buffer size
 BPORT = 50000 # broadcast port
 CPORT = 50002 # connection port
 
@@ -114,7 +114,7 @@ def joiners(core):
 		try:
 			message, address = s.recvfrom(1024)
 			if not address[0] == core.hostip:
-				#print "Got data from", address, ":", message
+				print "HOST ", core.hostip, " Got data from", address, ":", message
 				a = filter( lambda f: f.ip == address[0], core.peers )
 				if len( a ) == 0:			
 				#if not address in core.peers:
@@ -160,17 +160,26 @@ def messagePusher(core):
 
 def get_ip_list():
 	try:
+		# import these here, in case they're not available.
 		import array
 		import struct
 		import fcntl
+		import platorm
 		sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		names = array.array('B', '\0' * BYTES)
-		bytelen = struct.unpack('iL', fcntl.ioctl(sck.fileno(), SIOCGIFCONF, struct.pack('iL', BYTES, names.buffer_info()[0])))[0]
+		iplist = fcntl.ioctl(sck.fileno(), SIOCGIFCONF, struct.pack('iL', BYTES, names.buffer_info()[0]))
+		bytelen = struct.unpack('iL', iplist)[0]
 		namestr = names.tostring()
-		a = [namestr[i:i+32] for i in range(0, bytelen, 32)]
+		if platform.architecture()[0] == '64bit':
+			stride = 40
+		else:
+			stride = 32
+		a = [namestr[i:i+stride] for i in range(0, bytelen, stride)]
 		ips = [ n[20:24] for n in a ]
 		b = ['.'.join( [str(ord(e)) for e in n ] ) for n in ips ]
+		#print "IP list for this machine was ",bytelen," bytes long : ",b
 		b.remove( '127.0.0.1' )
+		#print "HOST IP list for this machine is : ",b
 		return b
 	except ImportError:
 		#meh, windows
@@ -191,7 +200,8 @@ class netcore:
 	def __init__(self):
 		self.peers = []
 		self.broadcastable = ['ping']
-		self.hostip = get_ip_list()[0]
+		iplist = get_ip_list()
+		self.hostip = iplist[0]
 		j = threading.Thread(target=joiners,args=[self])
 		j.daemon = True
 		j.start()
