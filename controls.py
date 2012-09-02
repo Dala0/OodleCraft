@@ -46,6 +46,7 @@ def game_on_mouse_motion( s, x, y, dx, dy ):
 		s.changeaim( s, - dx * rotScale, dy * rotScale )
 
 mouse_action_start = None
+VOLUME_MOD = key.MOD_CTRL
 
 def game_on_mouse_press(s, x, y, buttons, modifiers):
 	global mouse_action_start
@@ -55,14 +56,16 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 			if buttons & mouse.LEFT:
 				if centre in s.space:
 					del s.space[centre]
-					mouse_action_start = (centre,vacancy,-1)
+					if modifiers & VOLUME_MOD:
+						mouse_action_start = (centre,vacancy,-1)
 					s.c.send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
 					s.updateWorldList(s,centre)
 				else:
 					print "Cell ",centre," not in space"
 			if buttons & mouse.RIGHT:
 				plonk = s.plonk
-				mouse_action_start = (centre,vacancy,plonk)
+				if modifiers & VOLUME_MOD:
+					mouse_action_start = (centre,vacancy,plonk)
 				s.space[vacancy] = plonk
 				s.c.send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
 				s.updateWorldList(s,vacancy)
@@ -75,12 +78,12 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 	global mouse_action_start
 	if s.mode == 0:
 		if s.aimpair:
-			if mouse_action_start != None:
+			if modifiers & VOLUME_MOD and mouse_action_start != None:
 				oc,ov,op = mouse_action_start
 				centre, vacancy = s.aimpair
 				oproj = tuple(map(lambda t: t[0]-t[1],zip(ov,oc)))
 				proj = tuple(map(lambda t: t[0]-t[1],zip(vacancy,centre)))
-				if oproj == proj:
+				if True: #oproj == proj:
 					updates = []
 					if buttons & mouse.LEFT:
 						plonk = s.plonk
