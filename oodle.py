@@ -187,6 +187,8 @@ def updateFromNetwork(s):
 def netpush(dt):
 	state.c.send("p"+str(state.playerpos.x)+','+str(state.playerpos.y)+','+str(state.playerpos.z)+','+str(state.playeraimpitch)+','+str(state.playeraimyaw)+','+str(state.username))
 				
+def collidable(state, point):
+	return point in state.space and state.space[point] != state.reverselookup['water']
 def collisionAndResponse():
 	pp = state.playerpos
 	lx = int(pp.x)
@@ -202,10 +204,14 @@ def collisionAndResponse():
 	dy = pp.y - ly
 	dz = pp.z - lz
 	#do floor
-	se = (lx,ly-1,lz) in state.space
-	sw = (lx+1,ly-1,lz) in state.space
-	ne = (lx,ly-1,lz+1) in state.space
-	nw = (lx+1,ly-1,lz+1) in state.space
+	se = collidable(state,(lx,ly-1,lz))
+	sw = collidable(state,(lx+1,ly-1,lz))
+	ne = collidable(state,(lx,ly-1,lz+1))
+	nw = collidable(state,(lx+1,ly-1,lz+1))
+	#se = (lx,ly-1,lz) in state.space
+	#sw = (lx+1,ly-1,lz) in state.space
+	#ne = (lx,ly-1,lz+1) in state.space
+	#nw = (lx+1,ly-1,lz+1) in state.space
 	overlap = 0.5 - state.playerradius 
 	underlap = 1.0 - overlap
 	if dx > underlap:
@@ -228,10 +234,14 @@ def collisionAndResponse():
 	if infloor and not state.flying and state.playercontrol.y > 0.5:
 		state.playervel.y = 0.2
 	#do sides
-	se = (lx,ly,lz) in state.space or (lx,ly+1,lz) in state.space 
-	sw = (lx+1,ly,lz) in state.space or (lx+1,ly+1,lz) in state.space 
-	ne = (lx,ly,lz+1) in state.space or (lx,ly+1,lz+1) in state.space 
-	nw = (lx+1,ly,lz+1) in state.space or (lx+1,ly+1,lz+1) in state.space 
+	se = collidable(state,(lx,ly,lz)) or collidable(state,(lx,ly+1,lz))
+	sw = collidable(state,(lx+1,ly,lz)) or collidable(state,(lx+1,ly+1,lz))
+	ne = collidable(state,(lx,ly,lz+1)) or collidable(state,(lx,ly+1,lz+1))
+	nw = collidable(state,(lx+1,ly,lz+1)) or collidable(state,(lx+1,ly+1,lz+1))
+	#se = (lx,ly,lz) in state.space or (lx,ly+1,lz) in state.space 
+	#sw = (lx+1,ly,lz) in state.space or (lx+1,ly+1,lz) in state.space 
+	#ne = (lx,ly,lz+1) in state.space or (lx,ly+1,lz+1) in state.space 
+	#nw = (lx+1,ly,lz+1) in state.space or (lx+1,ly+1,lz+1) in state.space 
 	#print "lx,lz : ",lx,':',dx,',',lz,':',dz," ",nw,ne,sw,se
 	if dx > overlap:
 		if ( nw and dz > 0.5 ) or ( sw and dz < 0.5 ):
@@ -370,12 +380,12 @@ def makeWorldList(state,x,y,z):
 			yneg = (loc[0]-0,loc[1]-1,loc[2]-0)
 			zneg = (loc[0]-0,loc[1]-0,loc[2]-1)
 			if isWater:
-				if not xpos in state.space: sides.append( XPOS )
-				if not xneg in state.space: sides.append( XNEG )
-				if not ypos in state.space: sides.append( YPOS )
-				if not yneg in state.space: sides.append( YNEG )
-				if not zpos in state.space: sides.append( ZPOS )
-				if not zneg in state.space: sides.append( ZNEG )
+				if not xpos in state.space: sides.append( state.XPOS )
+				if not xneg in state.space: sides.append( state.XNEG )
+				if not ypos in state.space: sides.append( state.YPOS )
+				if not yneg in state.space: sides.append( state.YNEG )
+				if not zpos in state.space: sides.append( state.ZPOS )
+				if not zneg in state.space: sides.append( state.ZNEG )
 			else:
 				if not xpos in state.space or state.space[xpos] == WATER: sides.append( state.XPOS )
 				if not xneg in state.space or state.space[xneg] == WATER: sides.append( state.XNEG )
