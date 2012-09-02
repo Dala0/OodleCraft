@@ -527,6 +527,10 @@ def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
 def on_mouse_press(x,y, buttons, modifiers):
 	game_on_mouse_press(state, x, y, buttons, modifiers)
 
+@window.event
+def on_mouse_release(x,y, buttons, modifiers):
+	game_on_mouse_release(state, x, y, buttons, modifiers)
+
 from controls import *
 	
 @window.event
