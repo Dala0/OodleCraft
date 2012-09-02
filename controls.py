@@ -50,6 +50,23 @@ VOLUME_MOD = key.MOD_CTRL
 
 def game_on_mouse_press(s, x, y, buttons, modifiers):
 	global mouse_action_start
+	if s.mode == 1:
+		sx = x - s.invx - s.invb
+		sy = s.height - y - s.invy - s.invb
+		print "x,y = ",sx,",",sy
+		if sx > 0 and sx < 40 * 8 and sy > 0 and sy < 40 * 8:
+			iconx = sx/40
+			icony = sy/40
+			print "iconx,icony = ",iconx,",",icony
+			sx = sx - iconx*40
+			sy = sy - icony*40
+			print "sx,sy = ",sx,",",sy
+			if sx < 32 and sy < 32:
+				#select a material based on this icon
+				icon = iconx + icony * 8
+				print "Set plonk to ",icon
+				if icon > 0 and icon <= s.MAX_ID:
+					s.plonk = icon
 	if s.mode == 0:
 		if s.aimpair:
 			centre, vacancy = s.aimpair
@@ -117,5 +134,6 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 			mouse_action_start = None
 				
 def game_on_mouse_scroll(s,x, y, scroll_x, scroll_y):
-	s.changeMaterial( s, scroll_y)
+	#s.changeMaterial( s, scroll_y)
+	pass
 

@@ -44,4 +44,5 @@ material( 'lava2' )
 material( 'water0' )
 material( 'water1' )
 material( 'water2' )
+material( 'black' )
 

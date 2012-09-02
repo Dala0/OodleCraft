@@ -58,13 +58,14 @@ def game_on_draw( s ):
 	glOrtho(-w,w,-h,h,-1,1);
 	glMatrixMode(GL_MODELVIEW)
 	glLoadIdentity()
-	if s.mode == 0:
+	if s.mode == 0: # fly around and edit mode
 		glColor4f(1.0,1.0,1.0,0.9)
 		glScalef(16.0,16.0,0.1)
 		glEnable(s.cursortexture.target)
 		glBindTexture(s.cursortexture.target,s.cursortexture.id)
 		glCallList(s.ZNEG)
-
+	
+	glColor4f(1.0,1.0,1.0,0.9)
 	glDisable(GL_DEPTH_TEST)
 	glLoadIdentity()
 	glTranslatef(8+16-w,8+16-h,0)
@@ -90,4 +91,37 @@ def game_on_draw( s ):
 	glTranslatef(1,1,0)
 	glColor4f(1.0,1.0,1.0,1.0)
 	s.glyph_string.draw()
+
+	if s.mode == 1: # command mode, where the mouse is given freedom.
+		invcols = s.invwcount
+		invrows = 1 + (s.MAX_ID-1) / 8
+		gap = s.invs+s.invb
+		invw = invcols * gap + s.invb
+		invh = invrows * gap + s.invb
+
+		glColor4f(0,0,0,0.5)
+		glLoadIdentity()
+		glTranslatef(s.invx+invw/2-w,h-s.invy-invh/2,0)
+		glScalef(invw/2,invh/2,0.1)
+		texture = s.textures[s.reverselookup['black']]
+		glEnable(texture.target)
+		glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glBindTexture(texture.target,texture.id)
+		glCallList(s.ZNEG)
+
+		glColor4f(1.0,1.0,1.0,1.0)
+		for i in range(s.MAX_ID):
+			i = i + 1
+			if i in s.textures:
+				x = i % 8
+				y = i / 8
+				glLoadIdentity()
+				glTranslatef(s.invx+s.invb+16-w+x*40,h-s.invy-s.invb-16-y*40,0)
+				glScalef(16.0,16.0,0.1)
+				texture = s.textures[i]
+				glEnable(texture.target)
+				glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+				glBindTexture(texture.target,texture.id)
+				glCallList(s.ZNEG)
+
 

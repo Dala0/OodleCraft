@@ -51,14 +51,24 @@ state.players = {}
 import getpass
 state.username = getpass.getuser()
 
-arial = font.load('Arial', 12, bold=True, italic=False)
+arial = font.load('Arial', 10, bold=True, italic=False)
 text = 'Hello, world!'
-glyphs = arial.get_glyphs(text)
-state.glyph_string = GlyphString(text, glyphs)
+glyphs = None
+def SetMessage( s, message ):
+	print "Getting glyphs for ",message
+	glyphs = arial.get_glyphs(message)
+	s.glyph_string = GlyphString(message, glyphs)
+SetMessage(state, "Testing Message.")
+state.SetMessage = SetMessage
 
 
 #constants
 state.grain = 16
+state.invwcount = 8
+state.invx = 16
+state.invy = 16
+state.invs = 32
+state.invb = 8
 
 #images / textures
 state.textures = {}
@@ -479,9 +489,11 @@ def switchMode(state):
 	state.mode = 1-state.mode
 	if state.mode == 0:
 		window.set_exclusive_mouse(True)
+		state.SetMessage(state,"Normal Mode (press tab for menu)")
 	else:
 		window.set_exclusive_mouse(False)
 		state.playercontrol = Vec3(0,0,0)
+		state.SetMessage(state,"Menu Mode (press tab for normal)")
 state.switchMode = switchMode
 
 def refreshFor( state, cells ):
