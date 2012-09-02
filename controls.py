@@ -55,20 +55,18 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 			centre, vacancy = s.aimpair
 			if buttons & mouse.LEFT:
 				if centre in s.space:
-					del s.space[centre]
-					if modifiers & VOLUME_MOD:
-						mouse_action_start = (centre,vacancy,-1)
-					s.c.send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
-					s.updateWorldList(s,centre)
-				else:
-					print "Cell ",centre," not in space"
+					#del s.space[centre]
+					if True: #modifiers & VOLUME_MOD:
+						mouse_action_start = (centre,vacancy)
+					#s.c.send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
+					#s.updateWorldList(s,centre)
 			if buttons & mouse.RIGHT:
 				plonk = s.plonk
-				if modifiers & VOLUME_MOD:
-					mouse_action_start = (centre,vacancy,plonk)
-				s.space[vacancy] = plonk
-				s.c.send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
-				s.updateWorldList(s,vacancy)
+				if True: #modifiers & VOLUME_MOD:
+					mouse_action_start = (centre,vacancy)
+				#s.space[vacancy] = plonk
+				#s.c.send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
+				#s.updateWorldList(s,vacancy)
 			
 def tsub(a,b):
 	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
@@ -78,8 +76,9 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 	global mouse_action_start
 	if s.mode == 0:
 		if s.aimpair:
-			if modifiers & VOLUME_MOD and mouse_action_start != None:
-				oc,ov,op = mouse_action_start
+			#if modifiers & VOLUME_MOD and mouse_action_start != None:
+			if mouse_action_start != None:
+				oc,ov = mouse_action_start
 				centre, vacancy = s.aimpair
 				oproj = tuple(map(lambda t: t[0]-t[1],zip(ov,oc)))
 				proj = tuple(map(lambda t: t[0]-t[1],zip(vacancy,centre)))
@@ -108,7 +107,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									#s.updateWorldList(s,pos)
 					if len(updates) > 0:
 						s.refreshFor(s,updates)
-				mouse_action_start = None
+			mouse_action_start = None
 				
 def game_on_mouse_scroll(s,x, y, scroll_x, scroll_y):
 	s.changeMaterial( s, scroll_y)
