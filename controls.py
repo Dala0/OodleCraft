@@ -71,6 +71,7 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 def tsub(a,b):
 	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
 irange = lambda x,y: range(min(x,y),max(x,y)+1)
+brange = lambda x,y: range(min(x,y)-1,max(x,y)+2)
 
 def game_on_mouse_release(s, x, y, buttons, modifiers):
 	global mouse_action_start
@@ -93,8 +94,11 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									if pos in s.space:
 										del s.space[pos]
 										s.c.send("d"+str(x)+','+str(y)+','+str(z))
-										updates.append(pos)
-									#s.updateWorldList(s,pos)
+						for x in brange( oc[0],centre[0] ):
+							for y in brange( oc[1],centre[1] ):
+								for z in brange( oc[2],centre[2] ):
+									pos = (x,y,z)
+									updates.append(pos)
 					if buttons & mouse.RIGHT:
 						plonk = s.plonk
 						for x in irange( ov[0],vacancy[0] ):
@@ -103,8 +107,11 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									pos = (x,y,z)
 									s.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z))
+						for x in brange( ov[0],vacancy[0] ):
+							for y in brange( ov[1],vacancy[1] ):
+								for z in brange( ov[2],vacancy[2] ):
+									pos = (x,y,z)
 									updates.append(pos)
-									#s.updateWorldList(s,pos)
 					if len(updates) > 0:
 						s.refreshFor(s,updates)
 			mouse_action_start = None
