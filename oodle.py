@@ -52,13 +52,11 @@ import getpass
 state.username = getpass.getuser()
 
 arial = font.load('Arial', 10, bold=True, italic=False)
-text = 'Hello, world!'
 glyphs = None
 def SetMessage( s, message ):
-	print "Getting glyphs for ",message
 	glyphs = arial.get_glyphs(message)
 	s.glyph_string = GlyphString(message, glyphs)
-SetMessage(state, "Testing Message.")
+SetMessage(state, "Tab to switch mode")
 state.SetMessage = SetMessage
 
 
@@ -218,10 +216,6 @@ def collisionAndResponse():
 	sw = collidable(state,(lx+1,ly-1,lz))
 	ne = collidable(state,(lx,ly-1,lz+1))
 	nw = collidable(state,(lx+1,ly-1,lz+1))
-	#se = (lx,ly-1,lz) in state.space
-	#sw = (lx+1,ly-1,lz) in state.space
-	#ne = (lx,ly-1,lz+1) in state.space
-	#nw = (lx+1,ly-1,lz+1) in state.space
 	overlap = 0.5 - state.playerradius 
 	underlap = 1.0 - overlap
 	if dx > underlap:
@@ -248,10 +242,6 @@ def collisionAndResponse():
 	sw = collidable(state,(lx+1,ly,lz)) or collidable(state,(lx+1,ly+1,lz))
 	ne = collidable(state,(lx,ly,lz+1)) or collidable(state,(lx,ly+1,lz+1))
 	nw = collidable(state,(lx+1,ly,lz+1)) or collidable(state,(lx+1,ly+1,lz+1))
-	#se = (lx,ly,lz) in state.space or (lx,ly+1,lz) in state.space 
-	#sw = (lx+1,ly,lz) in state.space or (lx+1,ly+1,lz) in state.space 
-	#ne = (lx,ly,lz+1) in state.space or (lx,ly+1,lz+1) in state.space 
-	#nw = (lx+1,ly,lz+1) in state.space or (lx+1,ly+1,lz+1) in state.space 
 	#print "lx,lz : ",lx,':',dx,',',lz,':',dz," ",nw,ne,sw,se
 	if dx > overlap:
 		if ( nw and dz > 0.5 ) or ( sw and dz < 0.5 ):
@@ -489,11 +479,11 @@ def switchMode(state):
 	state.mode = 1-state.mode
 	if state.mode == 0:
 		window.set_exclusive_mouse(True)
-		state.SetMessage(state,"Normal Mode (press tab for menu)")
+		state.SetMessage(state,"Normal Mode")
 	else:
 		window.set_exclusive_mouse(False)
 		state.playercontrol = Vec3(0,0,0)
-		state.SetMessage(state,"Menu Mode (press tab for normal)")
+		state.SetMessage(state,"Menu Mode")
 state.switchMode = switchMode
 
 def refreshFor( state, cells ):
@@ -512,6 +502,27 @@ refreshFor( state, state.space.keys() )
 def updateFromAllSpace(state):
 	state.refreshFor(state, state.space.keys())
 state.updateFromAllSpace = updateFromAllSpace
+
+def storeOldState(state,cells):
+	memo = {}
+	for k in cells:
+		if k in state.space:
+			memo[k] = state.space[k]
+		else:
+			memo[k] = 0
+	state.memo = memo
+state.StoreForUndo = lambda c : storeOldState(state,c)
+def restoreOldState(state):
+	if state.memo != None:
+		for k,v in state.memo.items():
+			if v == 0:
+				if k in state.space:
+					del state.space[k]
+			else:
+				state.space[k] = v
+		state.refreshFor( state, state.memo.keys())
+		state.memo = None
+state.Undo = lambda : restoreOldState( state )
 
 #chunks[(0,0,0)] = makeWorldList(0,0,0,grain)
 

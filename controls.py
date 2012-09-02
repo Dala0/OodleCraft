@@ -4,6 +4,8 @@ from pyglet.window import mouse
 
 def game_on_key_press(s,symbol, modifiers):
 	if s.mode == 0:
+		if symbol == key.U:
+			s.Undo()
 		if symbol == key.A:
 			s.playercontrol.x = 1
 		if symbol == key.D:
@@ -104,6 +106,12 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 					updates = []
 					if buttons & mouse.LEFT:
 						plonk = s.plonk
+						for x in brange( oc[0],centre[0] ):
+							for y in brange( oc[1],centre[1] ):
+								for z in brange( oc[2],centre[2] ):
+									pos = (x,y,z)
+									updates.append(pos)
+						s.StoreForUndo(updates)
 						for x in irange( oc[0],centre[0] ):
 							for y in irange( oc[1],centre[1] ):
 								for z in irange( oc[2],centre[2] ):
@@ -111,24 +119,20 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									if pos in s.space:
 										del s.space[pos]
 										s.c.send("d"+str(x)+','+str(y)+','+str(z))
-						for x in brange( oc[0],centre[0] ):
-							for y in brange( oc[1],centre[1] ):
-								for z in brange( oc[2],centre[2] ):
-									pos = (x,y,z)
-									updates.append(pos)
 					if buttons & mouse.RIGHT:
 						plonk = s.plonk
+						for x in brange( ov[0],vacancy[0] ):
+							for y in brange( ov[1],vacancy[1] ):
+								for z in brange( ov[2],vacancy[2] ):
+									pos = (x,y,z)
+									updates.append(pos)
+						s.StoreForUndo(updates)
 						for x in irange( ov[0],vacancy[0] ):
 							for y in irange( ov[1],vacancy[1] ):
 								for z in irange( ov[2],vacancy[2] ):
 									pos = (x,y,z)
 									s.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z))
-						for x in brange( ov[0],vacancy[0] ):
-							for y in brange( ov[1],vacancy[1] ):
-								for z in brange( ov[2],vacancy[2] ):
-									pos = (x,y,z)
-									updates.append(pos)
 					if len(updates) > 0:
 						s.refreshFor(s,updates)
 			mouse_action_start = None
