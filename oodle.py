@@ -27,6 +27,17 @@ class GameState(dict):
 		return val
 	def __setattr__(self, attr, value):
 		dict.__setitem__(self, attr, value)
+
+class WorldState(dict):
+	def __init__(self, *args):
+		dict.__init__(self, args)
+
+	# these functions let world-functions access items as if they were elements
+	def __getattr__(self, attr):
+		val = dict.__getitem__(self, attr)
+		return val
+	def __setattr__(self, attr, value):
+		dict.__setitem__(self, attr, value)
         
 state = GameState()
 glPrims.filloutPrims( state )
@@ -105,10 +116,11 @@ state.aimpair = ((0,0,0),(0,1,0))
 
 acceleration = 0.01
 
-state.space = {}
+state.worlds = [ WorldState() ];
+state.worlds[0].space = {}
 state.plonk = 1
 state.brushsize = 1
-state.space[(0,0,0)] = state.plonk
+state.worlds[0].space[(0,0,0)] = state.plonk
 
 def updateFromNetwork(s):
 	for peer in s.c.peers:	
@@ -125,9 +137,9 @@ def updateFromNetwork(s):
 					#print "from"
 					pos = (int(pos[0]),int(pos[1]),int(pos[2]))
 					#print pos
-					if pos in s.space:
+					if pos in s.worlds[0].space:
 						#print "was there, deleted it"
-						del s.space[pos]
+						del s.worlds[0].space[pos]
 						s.updateWorldList(s,pos)
 				except:
 					pass
@@ -140,9 +152,9 @@ def updateFromNetwork(s):
 					#print "a ",mat
 					pos = (int(pos[1]),int(pos[2]),int(pos[3]))
 					#print "at ",pos
-					if not pos in s.space:
+					if not pos in s.worlds[0].space:
 						#print "where is was empty"
-						s.space[pos] = mat
+						s.worlds[0].space[pos] = mat
 						s.updateWorldList(s,pos)
 				except:
 					pass
@@ -152,7 +164,7 @@ def updateFromNetwork(s):
 			#		pos = m[1:].split(',')
 			#		mat = int(pos[0])
 			#		pos = (int(pos[1]),int(pos[2]),int(pos[3]))
-			#		s.space[pos] = mat
+			#		s.worlds[0].space[pos] = mat
 			#		s.updateWorldList(s,pos)
 			#	except:
 			#		pass
@@ -187,7 +199,7 @@ def updateFromNetwork(s):
 					pass
 	#if s.newarrival:
 	#	print "sending my data"
-	#	for key, value in s.space.items():
+	#	for key, value in s.worlds[0].space.items():
 	#		s.c.send("i"+str(value)+','+str(key[0])+','+str(key[1])+','+str(key[2]))
 	#	s.c.send("f")
 	#	s.newarrival = False
@@ -196,9 +208,9 @@ def updateFromNetwork(s):
 def netpush(dt):
 	state.c.send("p"+str(state.playerpos.x)+','+str(state.playerpos.y)+','+str(state.playerpos.z)+','+str(state.playeraimpitch)+','+str(state.playeraimyaw)+','+str(state.username))
 				
-def collidable(state, point):
-	return point in state.space and state.space[point] != state.reverselookup['water']
-def collisionAndResponse():
+def collidable(state, world, point):
+	return point in world.space and world.space[point] != state.reverselookup['water']
+def collisionAndResponse(world):
 	pp = state.playerpos
 	lx = int(pp.x)
 	ly = int(pp.y)
@@ -213,10 +225,11 @@ def collisionAndResponse():
 	dy = pp.y - ly
 	dz = pp.z - lz
 	#do floor
-	se = collidable(state,(lx,ly-1,lz))
-	sw = collidable(state,(lx+1,ly-1,lz))
-	ne = collidable(state,(lx,ly-1,lz+1))
-	nw = collidable(state,(lx+1,ly-1,lz+1))
+	coll = lambda pos : collidable(state,world,pos)
+	se = coll((lx,ly-1,lz))
+	sw = coll((lx+1,ly-1,lz))
+	ne = coll((lx,ly-1,lz+1))
+	nw = coll((lx+1,ly-1,lz+1))
 	overlap = 0.5 - state.playerradius 
 	underlap = 1.0 - overlap
 	if dx > underlap:
@@ -239,10 +252,10 @@ def collisionAndResponse():
 	if infloor and not state.flying and state.playercontrol.y > 0.5:
 		state.playervel.y = 0.2
 	#do sides
-	se = collidable(state,(lx,ly,lz)) or collidable(state,(lx,ly+1,lz))
-	sw = collidable(state,(lx+1,ly,lz)) or collidable(state,(lx+1,ly+1,lz))
-	ne = collidable(state,(lx,ly,lz+1)) or collidable(state,(lx,ly+1,lz+1))
-	nw = collidable(state,(lx+1,ly,lz+1)) or collidable(state,(lx+1,ly+1,lz+1))
+	se = coll((lx,ly,lz)) or coll((lx,ly+1,lz))
+	sw = coll((lx+1,ly,lz)) or coll((lx+1,ly+1,lz))
+	ne = coll((lx,ly,lz+1)) or coll((lx,ly+1,lz+1))
+	nw = coll((lx+1,ly,lz+1)) or coll((lx+1,ly+1,lz+1))
 	#print "lx,lz : ",lx,':',dx,',',lz,':',dz," ",nw,ne,sw,se
 	if dx > overlap:
 		if ( nw and dz > 0.5 ) or ( sw and dz < 0.5 ):
@@ -289,8 +302,9 @@ def update(dt):
 		diff.y = diff.y - dt * 0.7
 	state.playervel = state.playervel + diff
 	state.playerpos = state.playerpos + state.playervel
-	collisionAndResponse()
-	state.aimpair = findIntersectingBlockAndVacancy()
+	collisionAndResponse(state.worlds[0])
+	state.aimpair = findIntersectingBlockAndVacancy(state.worlds[0])
+	state.currentWorld = state.worlds[0]
 	updateFromNetwork(state)
 	#updateProcGen()
 	currentTime = time()
@@ -316,7 +330,7 @@ def tdiv(a,b):
 def tmul(a,b):
 	return tuple(map(lambda t: t[0]*t[1],zip(a,b)))
 
-def findIntersectingBlockAndVacancy():
+def findIntersectingBlockAndVacancy(world):
 	# offset by 0.5 for the grid, then one in Y for the height of the player
 	start = (state.playerpos+Vec3(0.5,1.5,0.5)).toTuple()
 	# map to the base grid positions (-0.5 --> -1)
@@ -350,7 +364,7 @@ def findIntersectingBlockAndVacancy():
 		current = tuple(map(lambda t: t[0]-t[1]*amount, zip(current,advance)))
 		current = tuple(map(lambda t: [t,t+1][t<=0], current))
 		nextcell = tadd( currentcell,choice )
-		if nextcell in state.space:
+		if nextcell in world.space:
 			return nextcell, currentcell
 		currentcell = nextcell
 		time = time + amount
@@ -366,7 +380,7 @@ def vrange( low, high ):
 			for z in xrange( int(low[2]), int(high[2]) ):
 				yield (x,y,z)
 
-def makeWorldList(state,x,y,z):
+def makeWorldList(state,world,x,y,z):
 	listName = hash(repr((x,y,z)))
 	#print (x,y,z)
 	#print listName
@@ -375,8 +389,8 @@ def makeWorldList(state,x,y,z):
 	hi = Vec3(x+1,y+1,z+1)*state.grain
 	glNewList(listName,GL_COMPILE)
 	for loc in vrange(low.toTuple(),hi.toTuple()):
-		if loc in state.space:
-			element = state.space[loc]
+		if loc in world.space:
+			element = world.space[loc]
 			l = Vec3(loc[0],loc[1],loc[2])
 			i,j,k = (l-low).toTuple()
 			isWater = element == WATER
@@ -388,19 +402,19 @@ def makeWorldList(state,x,y,z):
 			yneg = (loc[0]-0,loc[1]-1,loc[2]-0)
 			zneg = (loc[0]-0,loc[1]-0,loc[2]-1)
 			if isWater:
-				if not xpos in state.space: sides.append( state.XPOS )
-				if not xneg in state.space: sides.append( state.XNEG )
-				if not ypos in state.space: sides.append( state.YPOS )
-				if not yneg in state.space: sides.append( state.YNEG )
-				if not zpos in state.space: sides.append( state.ZPOS )
-				if not zneg in state.space: sides.append( state.ZNEG )
+				if not xpos in world.space: sides.append( state.XPOS )
+				if not xneg in world.space: sides.append( state.XNEG )
+				if not ypos in world.space: sides.append( state.YPOS )
+				if not yneg in world.space: sides.append( state.YNEG )
+				if not zpos in world.space: sides.append( state.ZPOS )
+				if not zneg in world.space: sides.append( state.ZNEG )
 			else:
-				if not xpos in state.space or state.space[xpos] == WATER: sides.append( state.XPOS )
-				if not xneg in state.space or state.space[xneg] == WATER: sides.append( state.XNEG )
-				if not ypos in state.space or state.space[ypos] == WATER: sides.append( state.YPOS )
-				if not yneg in state.space or state.space[yneg] == WATER: sides.append( state.YNEG )
-				if not zpos in state.space or state.space[zpos] == WATER: sides.append( state.ZPOS )
-				if not zneg in state.space or state.space[zneg] == WATER: sides.append( state.ZNEG )
+				if not xpos in world.space or world.space[xpos] == WATER: sides.append( state.XPOS )
+				if not xneg in world.space or world.space[xneg] == WATER: sides.append( state.XNEG )
+				if not ypos in world.space or world.space[ypos] == WATER: sides.append( state.YPOS )
+				if not yneg in world.space or world.space[yneg] == WATER: sides.append( state.YNEG )
+				if not zpos in world.space or world.space[zpos] == WATER: sides.append( state.ZPOS )
+				if not zneg in world.space or world.space[zneg] == WATER: sides.append( state.ZNEG )
 			
 			if len(sides) > 0:
 				glPushMatrix()
@@ -427,7 +441,7 @@ def updateWorldList(state,adjusted):
 		for Y in range( y-1, y+2 ):
 			for Z in range( z-1, z+2):
 				potential.append((X,Y,Z))
-	state.refreshFor( state, potential )
+	state.refreshFor( state, state.currentWorld, potential )
 state.updateWorldList = updateWorldList
 
 pyglet.clock.schedule_interval(update, 0.016666)
@@ -444,7 +458,7 @@ class LoadStruct:
 def save():
 	try:
 		stuff = LoadStruct()
-		stuff.space = state.space
+		stuff.space = state.worlds[0].space
 		stuff.playerpos = state.playerpos
 		stuff.playeraimyaw = state.playeraimyaw
 		stuff.playeraimpitch = state.playeraimpitch
@@ -453,8 +467,8 @@ def save():
 		f.close()
 		f = open('bin'+filename,'wb')
 		f.write( struct.pack( "fffff",state.playerpos.x,state.playerpos.y,state.playerpos.z,state.playeraimyaw,state.playeraimpitch) )
-		f.write( struct.pack( "i", len(state.space.keys() ) ) )
-		for key, value in state.space.items():
+		f.write( struct.pack( "i", len(stuff.space.keys() ) ) )
+		for key, value in stuff.space.items():
 			f.write( struct.pack( "iiii",key[0],key[1],key[2],value) )
 		f.close()
 	except IOError:
@@ -468,7 +482,7 @@ try:
 		stuff = pickle.loads(d)
 	except ImportError:
 		stuff = pickle.loads(d.replace('\n','\r\n'))
-	state.space = stuff.space
+	state.worlds[0].space = stuff.space
 	if stuff.playerpos: state.playerpos = stuff.playerpos
 	if stuff.playeraimyaw: state.playeraimyaw = stuff.playeraimyaw
 	if stuff.playeraimpitch: state.playeraimpitch = stuff.playeraimpitch
@@ -479,6 +493,7 @@ except IOError:
 
 # Direct OpenGL commands to this window.
 window = pyglet.window.Window()
+#window = pyglet.window.Window( width = 1024 )
 state.width,state.height = window.get_size()
 #print state.width, state.height
 state.mode = 0
@@ -494,7 +509,7 @@ def switchMode(state):
 		state.SetMessage(state,"Menu Mode")
 state.switchMode = switchMode
 
-def refreshFor( state, cells ):
+def refreshFor( state, world, cells ):
 	todo = {}
 	#print len( space )
 	for k in cells:
@@ -503,36 +518,37 @@ def refreshFor( state, cells ):
 	#print len( todo )
 	for k in todo.keys():
 		#print k
-		state.chunks[k] = state.makeWorldList(state,k[0],k[1],k[2])
+		state.chunks[k] = state.makeWorldList(state,world,k[0],k[1],k[2])
 state.refreshFor = refreshFor
-refreshFor( state, state.space.keys() )
+refreshFor( state, state.worlds[0], state.worlds[0].space.keys() )
 
 def updateFromAllSpace(state):
-	state.refreshFor(state, state.space.keys())
+	state.refreshFor(state, state.worlds[0],state.worlds[0].space.keys())
 state.updateFromAllSpace = updateFromAllSpace
 
-def storeOldState(state,cells):
+def storeOldState(state,world,cells):
 	memo = {}
 	for k in cells:
-		if k in state.space:
-			memo[k] = state.space[k]
+		if k in world.space:
+			memo[k] = world.space[k]
 		else:
 			memo[k] = 0
 	state.memo = memo
-state.StoreForUndo = lambda c : storeOldState(state,c)
+	state.memoworld = world
+state.StoreForUndo = lambda w,c : storeOldState(state,w,c)
 def restoreOldState(state):
 	if state.memo != None:
+		world = state.memoworld
 		for k,v in state.memo.items():
 			if v == 0:
-				if k in state.space:
-					del state.space[k]
+				if k in world.space:
+					del world.space[k]
 			else:
-				state.space[k] = v
-		state.refreshFor( state, state.memo.keys())
+				world.space[k] = v
+		state.refreshFor( state, world, state.memo.keys())
 		state.memo = None
+		state.memoworld = None
 state.Undo = lambda : restoreOldState( state )
-
-#chunks[(0,0,0)] = makeWorldList(0,0,0,grain)
 
 def changeMaterial( state, inc ):
 	state.plonk = state.plonk - inc
