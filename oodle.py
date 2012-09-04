@@ -107,6 +107,7 @@ acceleration = 0.01
 
 state.space = {}
 state.plonk = 1
+state.brushsize = 1
 state.space[(0,0,0)] = state.plonk
 
 def updateFromNetwork(s):

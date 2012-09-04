@@ -102,10 +102,9 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 				centre, vacancy = s.aimpair
 				oproj = tuple(map(lambda t: t[0]-t[1],zip(ov,oc)))
 				proj = tuple(map(lambda t: t[0]-t[1],zip(vacancy,centre)))
-				if True: #oproj == proj:
-					updates = []
+				updates = []
+				if s.brushsize == 1:
 					if buttons & mouse.LEFT:
-						plonk = s.plonk
 						for x in brange( oc[0],centre[0] ):
 							for y in brange( oc[1],centre[1] ):
 								for z in brange( oc[2],centre[2] ):
@@ -133,11 +132,54 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									pos = (x,y,z)
 									s.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z))
-					if len(updates) > 0:
-						s.refreshFor(s,updates)
+				else:
+					#brush size is greater than 1, just do one add/delete
+					bs = s.brushsize
+					reduction = 0.5
+					limit = pow(bs-reduction,2)
+					if buttons & mouse.LEFT:
+						for x in brange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
+							for y in brange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
+								for z in brange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
+									pos = (x,y,z)
+									updates.append(pos)
+						s.StoreForUndo(updates)
+						for x in irange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
+							x2 = pow(x - centre[0],2)
+							for y in irange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
+								y2 = pow(y - centre[1],2)
+								for z in irange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
+									z2 = pow(z - centre[2],2)
+									if x2+y2+z2 < limit:
+										pos = (x,y,z)
+										if pos in s.space:
+											del s.space[pos]
+											s.c.send("d"+str(x)+','+str(y)+','+str(z))
+					if buttons & mouse.RIGHT:
+						plonk = s.plonk
+						for x in brange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
+							for y in brange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
+								for z in brange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
+									pos = (x,y,z)
+									updates.append(pos)
+						s.StoreForUndo(updates)
+						for x in irange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
+							x2 = pow(x - vacancy[0],2)
+							for y in irange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
+								y2 = pow(y - vacancy[1],2)
+								for z in irange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
+									z2 = pow(z - vacancy[2],2)
+									if x2+y2+z2 < limit:
+										pos = (x,y,z)
+										s.space[pos] = plonk
+										s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z))
+				if len(updates) > 0:
+					s.refreshFor(s,updates)
 			mouse_action_start = None
 				
 def game_on_mouse_scroll(s,x, y, scroll_x, scroll_y):
+	s.brushsize = min( max( 1, s.brushsize + scroll_y ), 32 );
+	s.SetMessage( s, "Brush Size : "+str(s.brushsize ) )
 	#s.changeMaterial( s, scroll_y)
 	pass
 
