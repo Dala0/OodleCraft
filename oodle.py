@@ -360,6 +360,12 @@ def findIntersectingBlockAndVacancy():
 #updateProcGen()
 state.chunks = {}
 
+def vrange( low, high ):
+	for x in xrange( int(low[0]), int(high[0]) ):
+		for y in xrange( int(low[1]), int(high[1]) ):
+			for z in xrange( int(low[2]), int(high[2]) ):
+				yield (x,y,z)
+
 def makeWorldList(state,x,y,z):
 	listName = hash(repr((x,y,z)))
 	#print (x,y,z)
@@ -368,11 +374,12 @@ def makeWorldList(state,x,y,z):
 	low = Vec3(x,y,z)*state.grain
 	hi = Vec3(x+1,y+1,z+1)*state.grain
 	glNewList(listName,GL_COMPILE)
-	for loc, element in state.space.items():
-		l = Vec3(loc[0],loc[1],loc[2])
-		i,j,k = (l-low).toTuple()
-		isWater = element == WATER
-		if bounds( low, hi, l ):
+	for loc in vrange(low.toTuple(),hi.toTuple()):
+		if loc in state.space:
+			element = state.space[loc]
+			l = Vec3(loc[0],loc[1],loc[2])
+			i,j,k = (l-low).toTuple()
+			isWater = element == WATER
 			sides = []
 			xpos = (loc[0]+1,loc[1]+0,loc[2]+0)
 			ypos = (loc[0]+0,loc[1]+1,loc[2]+0)
