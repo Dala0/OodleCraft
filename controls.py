@@ -1,9 +1,10 @@
 #controls
 from pyglet.window import key
 from pyglet.window import mouse
+from pyglet import event
 
 def game_on_key_press(s,symbol, modifiers):
-	if s.mode == 0:
+	if s.menu == 0:
 		if symbol == key.U:
 			s.Undo()
 		if symbol == key.A:
@@ -14,6 +15,8 @@ def game_on_key_press(s,symbol, modifiers):
 			s.playercontrol.z = 1
 		if symbol == key.S:
 			s.playercontrol.z = -1
+		if symbol == key.G:
+			s.SeedLand()
 		if symbol == key.F:
 			s.flying = not s.flying
 		if symbol == key.SPACE:
@@ -31,10 +34,19 @@ def game_on_key_press(s,symbol, modifiers):
 		if symbol == key.RIGHT:
 			s.changeMaterial(1)
 	if symbol == key.TAB:
-		s.switchMode(s)
+		s.switchMode()
+	if symbol == key.E:
+		s.toggleMenu()
+	if symbol == key.N:
+		c = s.worlds.index(s.currentWorld)
+		c = (1+c)%len(s.worlds)
+		s.currentWorld = s.worlds[c]
+	#if symbol == key.ESCAPE:
+		#s.toggleMenu()
+		#return event.EVENT_HANDLED
 
 def game_on_key_release(s,symbol, modifiers):
-	if s.mode == 0:
+	if s.menu == 0:
 		if symbol == key.A or symbol == key.D:
 			s.playercontrol.x = 0
 		if symbol == key.W or symbol == key.S:
@@ -44,7 +56,7 @@ def game_on_key_release(s,symbol, modifiers):
 
 def game_on_mouse_motion( s, x, y, dx, dy ):
 	rotScale = 0.0025
-	if s.mode == 0:
+	if s.menu == 0:
 		s.changeaim( s, - dx * rotScale, dy * rotScale )
 
 mouse_action_start = None
@@ -52,7 +64,7 @@ VOLUME_MOD = key.MOD_CTRL
 
 def game_on_mouse_press(s, x, y, buttons, modifiers):
 	global mouse_action_start
-	if s.mode == 1:
+	if s.menu == 1:
 		sx = x - s.invx - s.invb
 		sy = s.height - y - s.invy - s.invb
 		print "x,y = ",sx,",",sy
@@ -69,7 +81,7 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 				print "Set plonk to ",icon
 				if icon > 0 and icon <= s.MAX_ID:
 					s.plonk = icon
-	if s.mode == 0:
+	if s.menu == 0:
 		if s.aimpair:
 			centre, vacancy = s.aimpair
 			if buttons & mouse.LEFT:
@@ -94,7 +106,7 @@ brange = lambda x,y: range(min(x,y)-1,max(x,y)+2)
 
 def game_on_mouse_release(s, x, y, buttons, modifiers):
 	global mouse_action_start
-	if s.mode == 0:
+	if s.menu == 0:
 		if s.aimpair:
 			#if modifiers & VOLUME_MOD and mouse_action_start != None:
 			if mouse_action_start != None:

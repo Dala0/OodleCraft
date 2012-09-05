@@ -25,14 +25,19 @@ def game_on_draw( s ):
 	glLoadIdentity()
 	# the elements of space
 
-	for location, element in s.chunks.items():
-		glPushMatrix()
-		i,j,k = location[0],location[1],location[2]
-		glTranslatef(i*s.grain,j*s.grain,k*s.grain)
-		glCallList(element)
-		glPopMatrix()
+	for world in s.worlds:
+		for location, element in world.chunks.items():
+			glPushMatrix()
+			i,j,k = location[0],location[1],location[2]
+			glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+			glRotatef(180.0*world.yaw/3.14159,0,1,0)
+			glTranslatef(i*s.grain,j*s.grain,k*s.grain)
+			glCallList(element)
+			glPopMatrix()
 	if s.aimpair:
 		glPushMatrix()
+		glTranslatef(s.currentWorld.pos.x,s.currentWorld.pos.y,s.currentWorld.pos.z)
+		glRotatef(180.0*s.currentWorld.yaw/3.14159,0,1,0)
 		loc,dest = s.aimpair
 		direc = ( dest[0]-loc[0], dest[1]-loc[1], dest[2]-loc[2] )
 		i,j,k = loc[0],loc[1],loc[2]
@@ -58,7 +63,7 @@ def game_on_draw( s ):
 	glOrtho(-w,w,-h,h,-1,1);
 	glMatrixMode(GL_MODELVIEW)
 	glLoadIdentity()
-	if s.mode == 0: # fly around and edit mode
+	if s.menu == 0: # fly around and edit mode
 		glColor4f(1.0,1.0,1.0,0.9)
 		glScalef(16.0,16.0,0.1)
 		glEnable(s.cursortexture.target)
@@ -92,7 +97,7 @@ def game_on_draw( s ):
 	glColor4f(1.0,1.0,1.0,1.0)
 	s.glyph_string.draw()
 
-	if s.mode == 1: # command mode, where the mouse is given freedom.
+	if s.menu == 1: # command mode, where the mouse is given freedom.
 		invcols = s.invwcount
 		invrows = 1 + (s.MAX_ID-1) / 8
 		gap = s.invs+s.invb

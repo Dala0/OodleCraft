@@ -67,7 +67,7 @@ glyphs = None
 def SetMessage( s, message ):
 	glyphs = arial.get_glyphs(message)
 	s.glyph_string = GlyphString(message, glyphs)
-SetMessage(state, "Tab to switch mode")
+SetMessage(state, "Tab to switch mode, ESC for menu")
 state.SetMessage = SetMessage
 
 
@@ -118,9 +118,27 @@ acceleration = 0.01
 
 state.worlds = [ WorldState() ];
 state.worlds[0].space = {}
+state.worlds[0].index = 0
+state.currentWorld = state.worlds[0]
+state.currentWorld.chunks = {}
+state.currentWorld.pos = Vec3(0,0,0)
+state.currentWorld.yaw = 0
 state.plonk = 1
 state.brushsize = 1
 state.worlds[0].space[(0,0,0)] = state.plonk
+
+def SeedLand(s):
+	w = WorldState()
+	w.index = len(s.worlds)
+	w.space = {}
+	w.space[(0,0,0)] = state.plonk
+	w.chunks = {}
+	w.pos = s.playerpos
+	w.yaw = s.playeraimyaw
+	s.worlds.append( w )
+	s.updateWorldList(w,(0,0,0))
+state.SeedLand = lambda : SeedLand(state)
+	
 
 def updateFromNetwork(s):
 	for peer in s.c.peers:	
@@ -139,8 +157,8 @@ def updateFromNetwork(s):
 					#print pos
 					if pos in s.worlds[0].space:
 						#print "was there, deleted it"
-						del s.worlds[0].space[pos]
-						s.updateWorldList(s,pos)
+						del s.currentWorld.space[pos]
+						s.updateWorldList(w.currentWorld,pos)
 				except:
 					pass
 			if m[0]=='a':
@@ -154,8 +172,8 @@ def updateFromNetwork(s):
 					#print "at ",pos
 					if not pos in s.worlds[0].space:
 						#print "where is was empty"
-						s.worlds[0].space[pos] = mat
-						s.updateWorldList(s,pos)
+						s.currentWorld.space[pos] = mat
+						s.updateWorldList(s.currentWorld,pos)
 				except:
 					pass
 			#if m[0]=='i': # informed by other player
@@ -164,7 +182,7 @@ def updateFromNetwork(s):
 			#		pos = m[1:].split(',')
 			#		mat = int(pos[0])
 			#		pos = (int(pos[1]),int(pos[2]),int(pos[3]))
-			#		s.worlds[0].space[pos] = mat
+			#		s.orlds[0].space[pos] = mat
 			#		s.updateWorldList(s,pos)
 			#	except:
 			#		pass
@@ -303,8 +321,7 @@ def update(dt):
 	state.playervel = state.playervel + diff
 	state.playerpos = state.playerpos + state.playervel
 	collisionAndResponse(state.worlds[0])
-	state.aimpair = findIntersectingBlockAndVacancy(state.worlds[0])
-	state.currentWorld = state.worlds[0]
+	state.aimpair = findIntersectingBlockAndVacancy(state.currentWorld)
 	updateFromNetwork(state)
 	#updateProcGen()
 	currentTime = time()
@@ -332,12 +349,18 @@ def tmul(a,b):
 
 def findIntersectingBlockAndVacancy(world):
 	# offset by 0.5 for the grid, then one in Y for the height of the player
-	start = (state.playerpos+Vec3(0.5,1.5,0.5)).toTuple()
+	wl = state.playerpos-world.pos
+	s = sin(world.yaw)
+	c = cos(world.yaw)
+	worldlocal = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
+	start = (worldlocal+Vec3(0.5,1.5,0.5)).toTuple()
 	# map to the base grid positions (-0.5 --> -1)
 	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 
 	# get the direction of the ray cast
-	direc = state.playeraim.toTuple()
+	wa = state.playeraim
+	worldaim = Vec3( c * wa.x - s * wa.z, wa.y, wa.z * c + s * wa.x )
+	direc = worldaim.toTuple()
 	# get the current distance to go in each axis
 	current = tsub( start, startcell )
 	current = tuple(map(lambda t: [1-t[0],t[0]][t[1]<0], zip(current,direc)))
@@ -372,7 +395,6 @@ def findIntersectingBlockAndVacancy(world):
 	return None
 
 #updateProcGen()
-state.chunks = {}
 
 def vrange( low, high ):
 	for x in xrange( int(low[0]), int(high[0]) ):
@@ -381,7 +403,7 @@ def vrange( low, high ):
 				yield (x,y,z)
 
 def makeWorldList(state,world,x,y,z):
-	listName = hash(repr((x,y,z)))
+	listName = hash(repr((world.index,x,y,z)))
 	#print (x,y,z)
 	#print listName
 	WATER = state.reverselookup['water']
@@ -431,18 +453,17 @@ def makeWorldList(state,world,x,y,z):
 				glPopMatrix()
 	glEndList()
 	return listName
-state.makeWorldList = makeWorldList
+state.makeWorldList = lambda world,x,y,z : makeWorldList(state, world,x,y,z)
 	
-def updateWorldList(state,adjusted):
-	#global chunks
+def updateWorldList(state,world,adjusted):
 	x,y,z = adjusted
 	potential = []
 	for X in range(x-1,x+2):
 		for Y in range( y-1, y+2 ):
 			for Z in range( z-1, z+2):
 				potential.append((X,Y,Z))
-	state.refreshFor( state, state.currentWorld, potential )
-state.updateWorldList = updateWorldList
+	state.refreshFor( state, world, potential )
+state.updateWorldList = lambda w,a : updateWorldList(state,w,a)
 
 pyglet.clock.schedule_interval(update, 0.016666)
 pyglet.clock.schedule_interval(netpush, 0.1)
@@ -497,17 +518,25 @@ window = pyglet.window.Window()
 state.width,state.height = window.get_size()
 #print state.width, state.height
 state.mode = 0
+MAX_MODE = 2
 window.set_exclusive_mouse(True)
 def switchMode(state):
-	state.mode = 1-state.mode
+	state.mode = (1+state.mode)%MAX_MODE
 	if state.mode == 0:
+		state.SetMessage(state,"Editing Mode")
+	elif state.mode == 1:
+		state.SetMessage(state,"Painting Mode")
+state.switchMode = lambda : switchMode( state )
+
+state.menu = 0
+def toggleMenu(state):
+	state.menu = 1-state.menu
+	if state.menu == 0:
 		window.set_exclusive_mouse(True)
-		state.SetMessage(state,"Normal Mode")
 	else:
 		window.set_exclusive_mouse(False)
 		state.playercontrol = Vec3(0,0,0)
-		state.SetMessage(state,"Menu Mode")
-state.switchMode = switchMode
+state.toggleMenu = lambda : toggleMenu(state)
 
 def refreshFor( state, world, cells ):
 	todo = {}
@@ -518,9 +547,9 @@ def refreshFor( state, world, cells ):
 	#print len( todo )
 	for k in todo.keys():
 		#print k
-		state.chunks[k] = state.makeWorldList(state,world,k[0],k[1],k[2])
+		world.chunks[k] = state.makeWorldList(world,k[0],k[1],k[2])
 state.refreshFor = refreshFor
-refreshFor( state, state.worlds[0], state.worlds[0].space.keys() )
+refreshFor( state, state.currentWorld, state.currentWorld.space.keys() )
 
 def updateFromAllSpace(state):
 	state.refreshFor(state, state.worlds[0],state.worlds[0].space.keys())
@@ -592,7 +621,7 @@ from controls import *
 	
 @window.event
 def on_key_press(symbol, modifiers):
-	game_on_key_press(state,symbol, modifiers)
+	return game_on_key_press(state,symbol, modifiers)
 
 @window.event
 def on_key_release(symbol, modifiers):
