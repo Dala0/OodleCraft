@@ -83,21 +83,11 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 					s.plonk = icon
 	if s.menu == 0:
 		if s.aimpair:
-			centre, vacancy = s.aimpair
+			centre, vacancy, w = s.aimpair
 			if buttons & mouse.LEFT:
-				if centre in s.currentWorld.space:
-					#del s.currentWorld.space[centre]
-					if True: #modifiers & VOLUME_MOD:
-						mouse_action_start = (centre,vacancy)
-					#s.c.send("d"+str(centre[0])+','+str(centre[1])+','+str(centre[2]))
-					#s.updateWorldList(s,centre)
+				mouse_action_start = s.aimpair
 			if buttons & mouse.RIGHT:
-				plonk = s.plonk
-				if True: #modifiers & VOLUME_MOD:
-					mouse_action_start = (centre,vacancy)
-				#s.currentWorld.space[vacancy] = plonk
-				#s.c.send("a"+str(plonk)+','+str(vacancy[0])+','+str(vacancy[1])+','+str(vacancy[2]))
-				#s.updateWorldList(s,vacancy)
+				mouse_action_start = s.aimpair
 			
 def tsub(a,b):
 	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
@@ -110,40 +100,40 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 		if s.aimpair:
 			#if modifiers & VOLUME_MOD and mouse_action_start != None:
 			if mouse_action_start != None:
-				oc,ov = mouse_action_start
-				centre, vacancy = s.aimpair
-				oproj = tuple(map(lambda t: t[0]-t[1],zip(ov,oc)))
-				proj = tuple(map(lambda t: t[0]-t[1],zip(vacancy,centre)))
+				oc,ov,ow = mouse_action_start
+				centre, vacancy,w = s.aimpair
+				world = s.worlds[w]
 				updates = []
 				if s.brushsize == 1:
-					if buttons & mouse.LEFT:
-						for x in brange( oc[0],centre[0] ):
-							for y in brange( oc[1],centre[1] ):
-								for z in brange( oc[2],centre[2] ):
-									pos = (x,y,z)
-									updates.append(pos)
-						s.StoreForUndo(s.currentWorld,updates)
-						for x in irange( oc[0],centre[0] ):
-							for y in irange( oc[1],centre[1] ):
-								for z in irange( oc[2],centre[2] ):
-									pos = (x,y,z)
-									if pos in s.currentWorld.space:
-										del s.currentWorld.space[pos]
-										s.c.send("d"+str(x)+','+str(y)+','+str(z))
-					if buttons & mouse.RIGHT:
-						plonk = s.plonk
-						for x in brange( ov[0],vacancy[0] ):
-							for y in brange( ov[1],vacancy[1] ):
-								for z in brange( ov[2],vacancy[2] ):
-									pos = (x,y,z)
-									updates.append(pos)
-						s.StoreForUndo(s.currentWorld,updates)
-						for x in irange( ov[0],vacancy[0] ):
-							for y in irange( ov[1],vacancy[1] ):
-								for z in irange( ov[2],vacancy[2] ):
-									pos = (x,y,z)
-									s.currentWorld.space[pos] = plonk
-									s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z))
+					if ow == w:
+						if buttons & mouse.LEFT:
+							for x in brange( oc[0],centre[0] ):
+								for y in brange( oc[1],centre[1] ):
+									for z in brange( oc[2],centre[2] ):
+										pos = (x,y,z)
+										updates.append(pos)
+							s.StoreForUndo(world,updates)
+							for x in irange( oc[0],centre[0] ):
+								for y in irange( oc[1],centre[1] ):
+									for z in irange( oc[2],centre[2] ):
+										pos = (x,y,z)
+										if pos in world.space:
+											del world.space[pos]
+											s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
+						if buttons & mouse.RIGHT:
+							plonk = s.plonk
+							for x in brange( ov[0],vacancy[0] ):
+								for y in brange( ov[1],vacancy[1] ):
+									for z in brange( ov[2],vacancy[2] ):
+										pos = (x,y,z)
+										updates.append(pos)
+							s.StoreForUndo(world,updates)
+							for x in irange( ov[0],vacancy[0] ):
+								for y in irange( ov[1],vacancy[1] ):
+									for z in irange( ov[2],vacancy[2] ):
+										pos = (x,y,z)
+										world.space[pos] = plonk
+										s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
 				else:
 					#brush size is greater than 1, just do one add/delete
 					bs = s.brushsize
@@ -155,7 +145,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 								for z in brange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
 									pos = (x,y,z)
 									updates.append(pos)
-						s.StoreForUndo(s.currentWorld,updates)
+						s.StoreForUndo(world,updates)
 						for x in irange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
 							x2 = pow(x - centre[0],2)
 							for y in irange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
@@ -164,9 +154,9 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									z2 = pow(z - centre[2],2)
 									if x2+y2+z2 < limit:
 										pos = (x,y,z)
-										if pos in s.currentWorld.space:
-											del s.currentWorld.space[pos]
-											s.c.send("d"+str(x)+','+str(y)+','+str(z))
+										if pos in world.space:
+											del world.space[pos]
+											s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
 					if buttons & mouse.RIGHT:
 						plonk = s.plonk
 						for x in brange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
@@ -174,7 +164,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 								for z in brange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
 									pos = (x,y,z)
 									updates.append(pos)
-						s.StoreForUndo(s.currentWorld,updates)
+						s.StoreForUndo(world,updates)
 						for x in irange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
 							x2 = pow(x - vacancy[0],2)
 							for y in irange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
@@ -183,10 +173,10 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									z2 = pow(z - vacancy[2],2)
 									if x2+y2+z2 < limit:
 										pos = (x,y,z)
-										s.currentWorld.space[pos] = plonk
-										s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z))
+										world.space[pos] = plonk
+										s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
 				if len(updates) > 0:
-					s.refreshFor(s,s.currentWorld,updates)
+					s.refreshFor(s,world,updates)
 			mouse_action_start = None
 				
 def game_on_mouse_scroll(s,x, y, scroll_x, scroll_y):

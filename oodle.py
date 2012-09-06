@@ -108,7 +108,7 @@ state.playerflatside = Vec3(1,0,0)
 state.playeraimyaw = 0
 state.playeraimpitch = 0
 state.playerradius = 0.4
-state.aimpair = ((0,0,0),(0,1,0))
+state.aimpair = ((0,0,0),(0,1,0),0) # aimpair also includes the world
 
 state.mode = 0
 MAX_MODE = 3
@@ -149,6 +149,7 @@ def SeedLand(s):
 	w.yaw = s.playeraimyaw
 	s.worlds.append( w )
 	s.updateWorldList(w,(0,0,0))
+	s.c.send("wa"+str(w.index)+','+str(w.pos.x)+','+str(w.pos.y)+','+str(w.pos.z)+','+str(w.yaw)+','+str(plonk))
 state.SeedLand = lambda : SeedLand(state)
 	
 
@@ -338,7 +339,7 @@ def update(dt):
 	if state.mode == 2: # driving mode
 		if state.currentWorld != state.worlds[0]:
 			state.currentWorld.pos = state.currentWorld.pos + playerMotion
-	state.aimpair = findIntersectingBlockAndVacancy(state.currentWorld)
+	state.aimpair = findIntersectingBlockAndVacancy(state)
 	updateFromNetwork(state)
 	#updateProcGen()
 	currentTime = time()
@@ -364,52 +365,58 @@ def tdiv(a,b):
 def tmul(a,b):
 	return tuple(map(lambda t: t[0]*t[1],zip(a,b)))
 
-def findIntersectingBlockAndVacancy(world):
-	# offset by 0.5 for the grid, then one in Y for the height of the player
-	wl = state.playerpos-world.pos
-	s = sin(world.yaw)
-	c = cos(world.yaw)
-	worldlocal = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
-	start = (worldlocal+Vec3(0.5,1.5,0.5)).toTuple()
-	# map to the base grid positions (-0.5 --> -1)
-	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
+def findIntersectingBlockAndVacancy(state):
+	best = None
+	besttime = 10
 
-	# get the direction of the ray cast
-	wa = state.playeraim
-	worldaim = Vec3( c * wa.x - s * wa.z, wa.y, wa.z * c + s * wa.x )
-	direc = worldaim.toTuple()
-	# get the current distance to go in each axis
-	current = tsub( start, startcell )
-	current = tuple(map(lambda t: [1-t[0],t[0]][t[1]<0], zip(current,direc)))
-	# make the move direction per axis
-	move = tuple(map(lambda t: [1,-1][t<0], direc))
-	# make the amount moved in current when moving with time
-	advance = tuple(map(lambda t: [t,-t][t<0], direc))
-	# make the "how long until we cross a boundary" per axis
-	times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
-	
-	currentcell = startcell
-	
-	time = 0
-	while time < 10:
-		amount = times[2]
-		choice = (0,0,move[2])
-		if times[0] < times[1] and times[0] < times[2]:
-			amount = times[0]
-			choice = (move[0],0,0)
-		elif times[1] < times[2]:
-			amount = times[1]
-			choice = (0,move[1],0)
-		amount = amount + 0.001
-		current = tuple(map(lambda t: t[0]-t[1]*amount, zip(current,advance)))
-		current = tuple(map(lambda t: [t,t+1][t<=0], current))
-		nextcell = tadd( currentcell,choice )
-		if nextcell in world.space:
-			return nextcell, currentcell
-		currentcell = nextcell
-		time = time + amount
+	for world in state.worlds:
+		# offset by 0.5 for the grid, then one in Y for the height of the player
+		wl = state.playerpos-world.pos
+		s = sin(world.yaw)
+		c = cos(world.yaw)
+		worldlocal = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
+		start = (worldlocal+Vec3(0.5,1.5,0.5)).toTuple()
+		# map to the base grid positions (-0.5 --> -1)
+		startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
+
+		# get the direction of the ray cast
+		wa = state.playeraim
+		worldaim = Vec3( c * wa.x - s * wa.z, wa.y, wa.z * c + s * wa.x )
+		direc = worldaim.toTuple()
+		# get the current distance to go in each axis
+		current = tsub( start, startcell )
+		current = tuple(map(lambda t: [1-t[0],t[0]][t[1]<0], zip(current,direc)))
+		# make the move direction per axis
+		move = tuple(map(lambda t: [1,-1][t<0], direc))
+		# make the amount moved in current when moving with time
+		advance = tuple(map(lambda t: [t,-t][t<0], direc))
+		# make the "how long until we cross a boundary" per axis
 		times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
-	return None
+		
+		currentcell = startcell
+		
+		time = 0
+		while time < besttime:
+			amount = times[2]
+			choice = (0,0,move[2])
+			if times[0] < times[1] and times[0] < times[2]:
+				amount = times[0]
+				choice = (move[0],0,0)
+			elif times[1] < times[2]:
+				amount = times[1]
+				choice = (0,move[1],0)
+			amount = amount + 0.001
+			current = tuple(map(lambda t: t[0]-t[1]*amount, zip(current,advance)))
+			current = tuple(map(lambda t: [t,t+1][t<=0], current))
+			nextcell = tadd( currentcell,choice )
+			if nextcell in world.space:
+				best = (nextcell, currentcell, world.index)
+				besttime = time
+				continue
+			currentcell = nextcell
+			time = time + amount
+			times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
+	return best
 
 #updateProcGen()
 

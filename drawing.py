@@ -36,9 +36,10 @@ def game_on_draw( s ):
 			glPopMatrix()
 	if s.aimpair:
 		glPushMatrix()
-		glTranslatef(s.currentWorld.pos.x,s.currentWorld.pos.y,s.currentWorld.pos.z)
-		glRotatef(180.0*s.currentWorld.yaw/3.14159,0,1,0)
-		loc,dest = s.aimpair
+		loc,dest,w = s.aimpair
+		world = s.worlds[w]
+		glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+		glRotatef(180.0*world.yaw/3.14159,0,1,0)
 		direc = ( dest[0]-loc[0], dest[1]-loc[1], dest[2]-loc[2] )
 		i,j,k = loc[0],loc[1],loc[2]
 		glTranslatef(i,j,k)
