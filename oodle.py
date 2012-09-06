@@ -149,7 +149,7 @@ def SeedLand(s):
 	w.yaw = s.playeraimyaw
 	s.worlds.append( w )
 	s.updateWorldList(w,(0,0,0))
-	s.c.send("wa"+str(w.index)+','+str(w.pos.x)+','+str(w.pos.y)+','+str(w.pos.z)+','+str(w.yaw)+','+str(plonk))
+	s.c.send("wa"+str(w.index)+','+str(w.pos.x)+','+str(w.pos.y)+','+str(w.pos.z)+','+str(w.yaw)+','+str(state.plonk))
 state.SeedLand = lambda : SeedLand(state)
 	
 

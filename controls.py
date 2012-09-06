@@ -89,10 +89,22 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 			if buttons & mouse.RIGHT:
 				mouse_action_start = s.aimpair
 			
+def tadd(a,b):
+	return tuple(map(lambda t: t[0]+t[1],zip(a,b)))
 def tsub(a,b):
 	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
 irange = lambda x,y: range(min(x,y),max(x,y)+1)
 brange = lambda x,y: range(min(x,y)-1,max(x,y)+2)
+def vrange( low, high ):
+	for x in irange( int(low[0]), int(high[0]) ):
+		for y in irange( int(low[1]), int(high[1]) ):
+			for z in irange( int(low[2]), int(high[2]) ):
+				yield (x,y,z)
+def bvrange( low, high ):
+	for x in brange( int(low[0]), int(high[0]) ):
+		for y in brange( int(low[1]), int(high[1]) ):
+			for z in brange( int(low[2]), int(high[2]) ):
+				yield (x,y,z)
 
 def game_on_mouse_release(s, x, y, buttons, modifiers):
 	global mouse_action_start
@@ -107,74 +119,88 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 				if s.brushsize == 1:
 					if ow == w:
 						if buttons & mouse.LEFT:
-							for x in brange( oc[0],centre[0] ):
-								for y in brange( oc[1],centre[1] ):
-									for z in brange( oc[2],centre[2] ):
-										pos = (x,y,z)
-										updates.append(pos)
-							s.StoreForUndo(world,updates)
-							for x in irange( oc[0],centre[0] ):
-								for y in irange( oc[1],centre[1] ):
-									for z in irange( oc[2],centre[2] ):
-										pos = (x,y,z)
-										if pos in world.space:
-											del world.space[pos]
-											s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
+							if s.mode == 0:
+								for pos in bvrange(oc,centre):
+									updates.append(pos)
+								s.StoreForUndo(world,updates)
+								for pos in vrange(oc,centre):
+									if pos in world.space:
+										del world.space[pos]
+										s.c.send("d"+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
+							if s.mode == 1:
+								s.plonk = world.space[centre]
 						if buttons & mouse.RIGHT:
 							plonk = s.plonk
-							for x in brange( ov[0],vacancy[0] ):
-								for y in brange( ov[1],vacancy[1] ):
-									for z in brange( ov[2],vacancy[2] ):
-										pos = (x,y,z)
+							if s.mode == 1: #painting
+								for pos in vrange(oc,centre):
+									if pos in world.space:
 										updates.append(pos)
-							s.StoreForUndo(world,updates)
-							for x in irange( ov[0],vacancy[0] ):
-								for y in irange( ov[1],vacancy[1] ):
-									for z in irange( ov[2],vacancy[2] ):
-										pos = (x,y,z)
 										world.space[pos] = plonk
-										s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
+										s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
+							if s.mode == 0:
+								for pos in bvrange(ov,vacancy):
+									updates.append(pos)
+								s.StoreForUndo(world,updates)
+								for pos in vrange(ov,vacancy):
+									world.space[pos] = plonk
+									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 				else:
 					#brush size is greater than 1, just do one add/delete
 					bs = s.brushsize
 					reduction = 0.5
 					limit = pow(bs-reduction,2)
-					if buttons & mouse.LEFT:
-						for x in brange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
-							for y in brange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
-								for z in brange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
-									pos = (x,y,z)
-									updates.append(pos)
-						s.StoreForUndo(world,updates)
-						for x in irange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
-							x2 = pow(x - centre[0],2)
-							for y in irange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
-								y2 = pow(y - centre[1],2)
-								for z in irange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
-									z2 = pow(z - centre[2],2)
-									if x2+y2+z2 < limit:
+					if s.mode == 0:
+						if buttons & mouse.LEFT:
+							for x in brange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
+								for y in brange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
+									for z in brange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
 										pos = (x,y,z)
-										if pos in world.space:
-											del world.space[pos]
-											s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
-					if buttons & mouse.RIGHT:
-						plonk = s.plonk
-						for x in brange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
-							for y in brange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
-								for z in brange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
-									pos = (x,y,z)
-									updates.append(pos)
-						s.StoreForUndo(world,updates)
-						for x in irange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
-							x2 = pow(x - vacancy[0],2)
-							for y in irange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
-								y2 = pow(y - vacancy[1],2)
-								for z in irange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
-									z2 = pow(z - vacancy[2],2)
-									if x2+y2+z2 < limit:
+										updates.append(pos)
+							s.StoreForUndo(world,updates)
+							for x in irange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
+								x2 = pow(x - centre[0],2)
+								for y in irange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
+									y2 = pow(y - centre[1],2)
+									for z in irange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
+										z2 = pow(z - centre[2],2)
+										if x2+y2+z2 < limit:
+											pos = (x,y,z)
+											if pos in world.space:
+												del world.space[pos]
+												s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
+						if buttons & mouse.RIGHT:
+							plonk = s.plonk
+							for x in brange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
+								for y in brange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
+									for z in brange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
 										pos = (x,y,z)
-										world.space[pos] = plonk
-										s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
+										updates.append(pos)
+							s.StoreForUndo(world,updates)
+							for x in irange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
+								x2 = pow(x - vacancy[0],2)
+								for y in irange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
+									y2 = pow(y - vacancy[1],2)
+									for z in irange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
+										z2 = pow(z - vacancy[2],2)
+										if x2+y2+z2 < limit:
+											pos = (x,y,z)
+											world.space[pos] = plonk
+											s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
+					if s.mode == 1:
+						if buttons & mouse.RIGHT:
+							plonk = s.plonk
+							bext = (s.brushsize,s.brushsize,s.brushsize)
+							for pos in vrange(tsub(vacancy,bext),tadd(vacancy,bext)):
+								if pos in world.space:
+									d = tsub(pos,vacancy)
+									d = reduce(lambda a,b: a+b,map(lambda t: t * t, d))
+									if d < limit:
+										updates.append(pos)
+							s.StoreForUndo(world,updates)
+							for pos in updates:
+								if pos in world.space:
+									world.space[pos] = plonk
+									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 				if len(updates) > 0:
 					s.refreshFor(s,world,updates)
 			mouse_action_start = None
