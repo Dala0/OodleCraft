@@ -110,6 +110,18 @@ state.playeraimpitch = 0
 state.playerradius = 0.4
 state.aimpair = ((0,0,0),(0,1,0))
 
+state.mode = 0
+MAX_MODE = 3
+def switchMode(state):
+	state.mode = (1+state.mode)%MAX_MODE
+	if state.mode == 0:
+		state.SetMessage(state,"Editing Mode")
+	elif state.mode == 1:
+		state.SetMessage(state,"Painting Mode")
+	elif state.mode == 2:
+		state.SetMessage(state,"Driving Mode")
+state.switchMode = lambda : switchMode( state )
+
 #x = 0
 #d = 1
 #t = 1
@@ -319,8 +331,13 @@ def update(dt):
 	if not state.flying:
 		diff.y = diff.y - dt * 0.7
 	state.playervel = state.playervel + diff
+	oldPlayerPos = state.playerpos
 	state.playerpos = state.playerpos + state.playervel
 	collisionAndResponse(state.worlds[0])
+	playerMotion = state.playerpos - oldPlayerPos
+	if state.mode == 2: # driving mode
+		if state.currentWorld != state.worlds[0]:
+			state.currentWorld.pos = state.currentWorld.pos + playerMotion
 	state.aimpair = findIntersectingBlockAndVacancy(state.currentWorld)
 	updateFromNetwork(state)
 	#updateProcGen()
@@ -480,6 +497,11 @@ def save():
 	try:
 		stuff = LoadStruct()
 		stuff.space = state.worlds[0].space
+		stuff.numworlds = len(state.worlds)
+		stuff.world = {}
+		for w in range(1,len(state.worlds)):
+			world = state.worlds[w]
+			stuff.world[w] = ( world.space, world.pos, world.yaw )
 		stuff.playerpos = state.playerpos
 		stuff.playeraimyaw = state.playeraimyaw
 		stuff.playeraimpitch = state.playeraimpitch
@@ -504,6 +526,13 @@ try:
 	except ImportError:
 		stuff = pickle.loads(d.replace('\n','\r\n'))
 	state.worlds[0].space = stuff.space
+	if hasattr(stuff, 'numworlds'):
+		numworlds = stuff.numworlds
+		for w in range(1,numworlds):
+			state.worlds.append( WorldState() )
+			state.worlds[w].space, state.worlds[w].pos, state.worlds[w].yaw = stuff.world[w]
+			state.worlds[w].chunks = {}
+			state.worlds[w].index = w
 	if stuff.playerpos: state.playerpos = stuff.playerpos
 	if stuff.playeraimyaw: state.playeraimyaw = stuff.playeraimyaw
 	if stuff.playeraimpitch: state.playeraimpitch = stuff.playeraimpitch
@@ -517,17 +546,8 @@ window = pyglet.window.Window()
 #window = pyglet.window.Window( width = 1024 )
 state.width,state.height = window.get_size()
 #print state.width, state.height
-state.mode = 0
-MAX_MODE = 2
-window.set_exclusive_mouse(True)
-def switchMode(state):
-	state.mode = (1+state.mode)%MAX_MODE
-	if state.mode == 0:
-		state.SetMessage(state,"Editing Mode")
-	elif state.mode == 1:
-		state.SetMessage(state,"Painting Mode")
-state.switchMode = lambda : switchMode( state )
 
+window.set_exclusive_mouse(True)
 state.menu = 0
 def toggleMenu(state):
 	state.menu = 1-state.menu
@@ -549,10 +569,13 @@ def refreshFor( state, world, cells ):
 		#print k
 		world.chunks[k] = state.makeWorldList(world,k[0],k[1],k[2])
 state.refreshFor = refreshFor
-refreshFor( state, state.currentWorld, state.currentWorld.space.keys() )
+
+for world in state.worlds:
+	refreshFor( state, world, world.space.keys() )
 
 def updateFromAllSpace(state):
-	state.refreshFor(state, state.worlds[0],state.worlds[0].space.keys())
+	for world in state.worlds:
+		state.refreshFor(state, world, world.space.keys())
 state.updateFromAllSpace = updateFromAllSpace
 
 def storeOldState(state,world,cells):
@@ -599,6 +622,10 @@ def changeaim( state, yaw, pitch ):
 		state.playeraimyaw = state.playeraimyaw + PI*2
 	if state.playeraimyaw > PI:
 		state.playeraimyaw = state.playeraimyaw - PI*2
+	if state.mode == 2: # driving mode
+		if state.currentWorld != state.worlds[0]:
+			state.currentWorld.yaw = state.currentWorld.yaw + yaw
+
 state.changeaim = changeaim
 
 @window.event
