@@ -57,7 +57,7 @@ def game_on_key_release(s,symbol, modifiers):
 def game_on_mouse_motion( s, x, y, dx, dy ):
 	rotScale = 0.0025
 	if s.menu == 0:
-		s.changeaim( s, - dx * rotScale, dy * rotScale )
+		s.changeaim( - dx * rotScale, dy * rotScale )
 
 mouse_action_start = None
 VOLUME_MOD = key.MOD_CTRL
@@ -202,12 +202,11 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									world.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 				if len(updates) > 0:
-					s.refreshFor(s,world,updates)
+					s.refreshFor(world,updates)
 			mouse_action_start = None
 				
 def game_on_mouse_scroll(s,x, y, scroll_x, scroll_y):
-	s.brushsize = min( max( 1, s.brushsize + scroll_y ), 32 );
+	s.brushsize = min( max( 1, s.brushsize + scroll_y ), 8 );
 	s.SetMessage( s, "Brush Size : "+str(s.brushsize ) )
-	#s.changeMaterial( s, scroll_y)
 	pass
 

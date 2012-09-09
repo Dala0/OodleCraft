@@ -171,7 +171,7 @@ def updateFromNetwork(s):
 					if pos in s.worlds[0].space:
 						#print "was there, deleted it"
 						del s.currentWorld.space[pos]
-						s.updateWorldList(w.currentWorld,pos)
+						s.updateWorldList(s.currentWorld,pos)
 				except:
 					pass
 			if m[0]=='a':
@@ -486,7 +486,7 @@ def updateWorldList(state,world,adjusted):
 		for Y in range( y-1, y+2 ):
 			for Z in range( z-1, z+2):
 				potential.append((X,Y,Z))
-	state.refreshFor( state, world, potential )
+	state.refreshFor( world, potential )
 state.updateWorldList = lambda w,a : updateWorldList(state,w,a)
 
 pyglet.clock.schedule_interval(update, 0.016666)
@@ -575,15 +575,15 @@ def refreshFor( state, world, cells ):
 	for k in todo.keys():
 		#print k
 		world.chunks[k] = state.makeWorldList(world,k[0],k[1],k[2])
-state.refreshFor = refreshFor
+state.refreshFor = lambda w,c: refreshFor(state, w, c )
 
 for world in state.worlds:
-	refreshFor( state, world, world.space.keys() )
+	state.refreshFor( world, world.space.keys() )
 
 def updateFromAllSpace(state):
 	for world in state.worlds:
-		state.refreshFor(state, world, world.space.keys())
-state.updateFromAllSpace = updateFromAllSpace
+		state.refreshFor( world, world.space.keys())
+state.updateFromAllSpace = lambda : updateFromAllSpace(state)
 
 def storeOldState(state,world,cells):
 	memo = {}
@@ -604,7 +604,7 @@ def restoreOldState(state):
 					del world.space[k]
 			else:
 				world.space[k] = v
-		state.refreshFor( state, world, state.memo.keys())
+		state.refreshFor( world, state.memo.keys())
 		state.memo = None
 		state.memoworld = None
 state.Undo = lambda : restoreOldState( state )
@@ -615,7 +615,7 @@ def changeMaterial( state, inc ):
 		state.plonk = state.plonk + state.MAX_ID
 	while state.plonk > state.MAX_ID:
 		state.plonk = state.plonk - state.MAX_ID
-state.changeMaterial = changeMaterial
+state.changeMaterial = lambda i : changeMaterial( state, i )
 
 def changeaim( state, yaw, pitch ):
 	state.playeraimyaw = state.playeraimyaw + yaw
@@ -632,8 +632,7 @@ def changeaim( state, yaw, pitch ):
 	if state.mode == 2: # driving mode
 		if state.currentWorld != state.worlds[0]:
 			state.currentWorld.yaw = state.currentWorld.yaw + yaw
-
-state.changeaim = changeaim
+state.changeaim = lambda y,p: changeaim(state,y,p)
 
 @window.event
 def on_mouse_motion(x, y, dx, dy):
