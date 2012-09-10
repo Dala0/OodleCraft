@@ -95,12 +95,12 @@ def tsub(a,b):
 	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
 irange = lambda x,y: range(min(x,y),max(x,y)+1)
 brange = lambda x,y: range(min(x,y)-1,max(x,y)+2)
-def vrange( low, high ):
+def virange( low, high ):
 	for x in irange( int(low[0]), int(high[0]) ):
 		for y in irange( int(low[1]), int(high[1]) ):
 			for z in irange( int(low[2]), int(high[2]) ):
 				yield (x,y,z)
-def bvrange( low, high ):
+def bvirange( low, high ):
 	for x in brange( int(low[0]), int(high[0]) ):
 		for y in brange( int(low[1]), int(high[1]) ):
 			for z in brange( int(low[2]), int(high[2]) ):
@@ -120,28 +120,32 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 					if ow == w:
 						if buttons & mouse.LEFT:
 							if s.mode == 0:
-								for pos in bvrange(oc,centre):
+								s.DebugLog("Deleting from "+repr(oc)+" to "+repr(centre))
+								for pos in bvirange(oc,centre):
 									updates.append(pos)
 								s.StoreForUndo(world,updates)
-								for pos in vrange(oc,centre):
+								for pos in virange(oc,centre):
 									if pos in world.space:
 										del world.space[pos]
 										s.c.send("d"+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 							if s.mode == 1:
+								s.DebugLog("Picking from "+repr(centre))
 								s.plonk = world.space[centre]
 						if buttons & mouse.RIGHT:
 							plonk = s.plonk
 							if s.mode == 1: #painting
-								for pos in vrange(oc,centre):
+								s.DebugLog("Painting over range "+repr(oc)+" to "+repr(centre))
+								for pos in virange(oc,centre):
 									if pos in world.space:
 										updates.append(pos)
 										world.space[pos] = plonk
 										s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 							if s.mode == 0:
-								for pos in bvrange(ov,vacancy):
+								s.DebugLog("Inserting from "+repr(oc)+" to "+repr(centre))
+								for pos in bvirange(ov,vacancy):
 									updates.append(pos)
 								s.StoreForUndo(world,updates)
-								for pos in vrange(ov,vacancy):
+								for pos in virange(ov,vacancy):
 									world.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 				else:
@@ -151,6 +155,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 					limit = pow(bs-reduction,2)
 					if s.mode == 0:
 						if buttons & mouse.LEFT:
+							s.DebugLog("Deleting a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							for x in brange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
 								for y in brange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
 									for z in brange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
@@ -169,6 +174,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 												del world.space[pos]
 												s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
 						if buttons & mouse.RIGHT:
+							s.DebugLog("Creating a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							plonk = s.plonk
 							for x in brange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
 								for y in brange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
@@ -188,9 +194,10 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 											s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
 					if s.mode == 1:
 						if buttons & mouse.RIGHT:
+							s.DebugLog("Creating a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							plonk = s.plonk
 							bext = (s.brushsize,s.brushsize,s.brushsize)
-							for pos in vrange(tsub(vacancy,bext),tadd(vacancy,bext)):
+							for pos in virange(tsub(vacancy,bext),tadd(vacancy,bext)):
 								if pos in world.space:
 									d = tsub(pos,vacancy)
 									d = reduce(lambda a,b: a+b,map(lambda t: t * t, d))
@@ -201,6 +208,9 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 								if pos in world.space:
 									world.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
+						if buttons & mouse.LEFT:
+							s.DebugLog("Picking from "+repr(centre))
+							s.plonk = world.space[centre]
 				if len(updates) > 0:
 					s.refreshFor(world,updates)
 			mouse_action_start = None

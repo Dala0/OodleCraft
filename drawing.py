@@ -98,6 +98,18 @@ def game_on_draw( s ):
 	glColor4f(1.0,1.0,1.0,1.0)
 	s.glyph_string.draw()
 
+	count = len(s.debuglog)
+	for index,item in enumerate(s.debuglog):
+		glPushMatrix()
+		glLoadIdentity()
+		string = item[0]
+		glyphs = item[1]
+		xpos = w-glyphs.get_subwidth(0,len(string))
+		ypos = h-10 * (count-index)
+		glTranslatef(xpos,ypos,0)
+		glyphs.draw()
+		glPopMatrix()
+
 	if s.menu == 1: # command mode, where the mouse is given freedom.
 		invcols = s.invwcount
 		invrows = 1 + (s.MAX_ID-1) / 8

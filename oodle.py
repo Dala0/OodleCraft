@@ -69,7 +69,15 @@ def SetMessage( s, message ):
 	s.glyph_string = GlyphString(message, glyphs)
 SetMessage(state, "Tab to switch mode, ESC for menu")
 state.SetMessage = SetMessage
-
+state.debuglog = []
+state.debuglimit = 25
+courier = font.load('Courier', 8, bold=True, italic=False)
+def DebugLog( s, message ):
+	glyphs = courier.get_glyphs(message)
+	s.debuglog.append( (message,GlyphString(message,glyphs)) )
+	if len( s.debuglog ) > s.debuglimit:
+		s.debuglog = s.debuglog[-s.debuglimit:]
+state.DebugLog = lambda m : DebugLog(state, m )
 
 #constants
 state.grain = 16
@@ -433,8 +441,11 @@ def makeWorldList(state,world,x,y,z):
 	WATER = state.reverselookup['water']
 	low = Vec3(x,y,z)*state.grain
 	hi = Vec3(x+1,y+1,z+1)*state.grain
+	intlow = map( lambda t: int(t), low.toTuple())
+	inthi = map( lambda t: int(t), hi.toTuple())
 	glNewList(listName,GL_COMPILE)
-	for loc in vrange(low.toTuple(),hi.toTuple()):
+	#for loc in vrange(low.toTuple(),hi.toTuple()):
+	for loc in vrange(intlow,inthi):
 		if loc in world.space:
 			element = world.space[loc]
 			l = Vec3(loc[0],loc[1],loc[2])
