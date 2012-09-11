@@ -67,18 +67,14 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 	if s.menu == 1:
 		sx = x - s.invx - s.invb
 		sy = s.height - y - s.invy - s.invb
-		print "x,y = ",sx,",",sy
 		if sx > 0 and sx < 40 * 8 and sy > 0 and sy < 40 * 8:
 			iconx = sx/40
 			icony = sy/40
-			print "iconx,icony = ",iconx,",",icony
 			sx = sx - iconx*40
 			sy = sy - icony*40
-			print "sx,sy = ",sx,",",sy
 			if sx < 32 and sy < 32:
 				#select a material based on this icon
 				icon = iconx + icony * 8
-				print "Set plonk to ",icon
 				if icon > 0 and icon <= s.MAX_ID:
 					s.plonk = icon
 	if s.menu == 0:
@@ -93,6 +89,7 @@ def tadd(a,b):
 	return tuple(map(lambda t: t[0]+t[1],zip(a,b)))
 def tsub(a,b):
 	return tuple(map(lambda t: t[0]-t[1],zip(a,b)))
+def mul(a): return a[0]*a[1]
 irange = lambda x,y: range(min(x,y),max(x,y)+1)
 brange = lambda x,y: range(min(x,y)-1,max(x,y)+2)
 def virange( low, high ):
@@ -151,28 +148,22 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 				else:
 					#brush size is greater than 1, just do one add/delete
 					bs = s.brushsize
+					vbs = (bs,bs,bs)
 					reduction = 0.5
 					limit = pow(bs-reduction,2)
 					if s.mode == 0:
 						if buttons & mouse.LEFT:
 							s.DebugLog("Deleting a sphere at "+repr(centre)+" rad "+str(s.brushsize))
-							for x in brange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
-								for y in brange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
-									for z in brange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
-										pos = (x,y,z)
-										updates.append(pos)
+							for pos in bvirange( tsub(centre, vbs), tadd(centre, vbs) ):
+								updates.append(pos)
 							s.StoreForUndo(world,updates)
-							for x in irange( centre[0]-s.brushsize,centre[0]+s.brushsize ):
-								x2 = pow(x - centre[0],2)
-								for y in irange( centre[1]-s.brushsize,centre[1]+s.brushsize ):
-									y2 = pow(y - centre[1],2)
-									for z in irange( centre[2]-s.brushsize,centre[2]+s.brushsize ):
-										z2 = pow(z - centre[2],2)
-										if x2+y2+z2 < limit:
-											pos = (x,y,z)
-											if pos in world.space:
-												del world.space[pos]
-												s.c.send("d"+str(x)+','+str(y)+','+str(z)+','+str(w))
+							for pos in virange( tsub(centre, vbs), tadd(centre, vbs) ):
+								off = tsub(pos,centre)
+								d2 = sum(map(mul, zip(off,off)))
+								if d2 < limit:
+									if pos in world.space:
+										del world.space[pos]
+										s.c.send("d"+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 						if buttons & mouse.RIGHT:
 							s.DebugLog("Creating a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							plonk = s.plonk
@@ -182,16 +173,12 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 										pos = (x,y,z)
 										updates.append(pos)
 							s.StoreForUndo(world,updates)
-							for x in irange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
-								x2 = pow(x - vacancy[0],2)
-								for y in irange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
-									y2 = pow(y - vacancy[1],2)
-									for z in irange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
-										z2 = pow(z - vacancy[2],2)
-										if x2+y2+z2 < limit:
-											pos = (x,y,z)
-											world.space[pos] = plonk
-											s.c.send("a"+str(plonk)+','+str(x)+','+str(y)+','+str(z)+','+str(w))
+							for pos in virange( tsub(centre, vbs), tadd(centre, vbs) ):
+								off = tsub(pos,centre)
+								d2 = sum(map(mul, zip(off,off)))
+								if d2 < limit:
+									world.space[pos] = plonk
+									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 					if s.mode == 1:
 						if buttons & mouse.RIGHT:
 							s.DebugLog("Creating a sphere at "+repr(centre)+" rad "+str(s.brushsize))
