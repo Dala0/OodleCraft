@@ -441,11 +441,8 @@ def makeWorldList(state,world,x,y,z):
 	WATER = state.reverselookup['water']
 	low = Vec3(x,y,z)*state.grain
 	hi = Vec3(x+1,y+1,z+1)*state.grain
-	intlow = map( lambda t: int(t), low.toTuple())
-	inthi = map( lambda t: int(t), hi.toTuple())
 	glNewList(listName,GL_COMPILE)
-	#for loc in vrange(low.toTuple(),hi.toTuple()):
-	for loc in vrange(intlow,inthi):
+	for loc in vrange(low.toTuple(),hi.toTuple()):
 		if loc in world.space:
 			element = world.space[loc]
 			l = Vec3(loc[0],loc[1],loc[2])
