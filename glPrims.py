@@ -9,6 +9,8 @@ XNEG = 5
 ZPOS = 6
 ZNEG = 7
 
+UNLITCUBE = 8
+
 o = 1
 O = 1.01
 
@@ -207,6 +209,65 @@ glVertex3f(  o, -o,  o)
 glEnd()
 glEndList()
 
+glNewList(UNLITCUBE,GL_COMPILE)
+glBegin(GL_QUADS)
+glNormal3f(0,0,-1)
+glTexCoord2f( 0, 0)
+glVertex3f( -o, -o, -o)
+glTexCoord2f( 1, 0)
+glVertex3f(  o, -o, -o)
+glTexCoord2f( 1, 1)
+glVertex3f(  o,  o, -o)
+glTexCoord2f( 0, 1)
+glVertex3f( -o,  o, -o)
+glNormal3f(0,0,1)
+glTexCoord2f( 0, 0)
+glVertex3f( -o, -o,  o)
+glTexCoord2f( 1, 0)
+glVertex3f(  o, -o,  o)
+glTexCoord2f( 1, 1)
+glVertex3f(  o,  o,  o)
+glTexCoord2f( 0, 1)
+glVertex3f( -o,  o,  o)
+glNormal3f(0,-1,0) 
+glTexCoord2f( 0, 0)
+glVertex3f( -o, -o, -o)
+glTexCoord2f( 1, 0)
+glVertex3f(  o, -o, -o)
+glTexCoord2f( 1, 1)
+glVertex3f(  o, -o,  o)
+glTexCoord2f( 0, 1)
+glVertex3f( -o, -o,  o)
+glNormal3f(0,1,0) 
+glTexCoord2f( 0, 0)
+glVertex3f( -o,  o, -o)
+glTexCoord2f( 1, 0)
+glVertex3f(  o,  o, -o)
+glTexCoord2f( 1, 1)
+glVertex3f(  o,  o,  o)
+glTexCoord2f( 0, 1)
+glVertex3f( -o,  o,  o)
+glNormal3f(-1,0,0)
+glTexCoord2f( 0, 0)
+glVertex3f( -o, -o, -o)
+glTexCoord2f( 1, 0)
+glVertex3f( -o,  o, -o)
+glTexCoord2f( 1, 1)
+glVertex3f( -o,  o,  o)
+glTexCoord2f( 0, 1)
+glVertex3f( -o, -o,  o)                      
+glNormal3f(1,0,0)
+glTexCoord2f( 0, 0)
+glVertex3f(  o, -o, -o)
+glTexCoord2f( 1, 0)
+glVertex3f(  o,  o, -o)
+glTexCoord2f( 1, 1)
+glVertex3f(  o,  o,  o)
+glTexCoord2f( 0, 1)
+glVertex3f(  o, -o,  o)
+glEnd()
+glEndList()
+
 glNewList(YPOS,GL_COMPILE)
 glBegin(GL_QUADS)
 glNormal3f(0,1,0) 
@@ -289,13 +350,14 @@ glEnd()
 glEndList()
 
 def filloutPrims( state ):
-	state.CUBE = 1
-	state.YPOS = 2
-	state.YNEG = 3
-	state.XPOS = 4
-	state.XNEG = 5
-	state.ZPOS = 6
-	state.ZNEG = 7
+	state.CUBE = CUBE
+	state.UNLITCUBE = UNLITCUBE
+	state.YPOS = YPOS
+	state.YNEG = YNEG
+	state.XPOS = XPOS
+	state.XNEG = XNEG
+	state.ZPOS = ZPOS
+	state.ZNEG = ZNEG
 	state.draw_face = draw_face
 	state.draw_cube = draw_cube
 

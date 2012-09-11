@@ -9,20 +9,26 @@ def game_on_key_press(s,symbol, modifiers):
 			s.Undo()
 		if symbol == key.A:
 			s.playercontrol.x = 1
+			s.hasMovedSinceStartedClicking = True
 		if symbol == key.D:
 			s.playercontrol.x = -1
+			s.hasMovedSinceStartedClicking = True
 		if symbol == key.W:
 			s.playercontrol.z = 1
+			s.hasMovedSinceStartedClicking = True
 		if symbol == key.S:
 			s.playercontrol.z = -1
+			s.hasMovedSinceStartedClicking = True
 		if symbol == key.G:
 			s.SeedLand()
 		if symbol == key.F:
 			s.flying = not s.flying
 		if symbol == key.SPACE:
 			s.playercontrol.y = 1
+			s.hasMovedSinceStartedClicking = True
 		if symbol == key.LSHIFT:
 			s.playercontrol.y = -1
+			s.hasMovedSinceStartedClicking = True
 		if symbol == key._1:
 			s.plonk = 1
 		if symbol == key._2:
@@ -59,11 +65,9 @@ def game_on_mouse_motion( s, x, y, dx, dy ):
 	if s.menu == 0:
 		s.changeaim( - dx * rotScale, dy * rotScale )
 
-mouse_action_start = None
 VOLUME_MOD = key.MOD_CTRL
 
 def game_on_mouse_press(s, x, y, buttons, modifiers):
-	global mouse_action_start
 	if s.menu == 1:
 		sx = x - s.invx - s.invb
 		sy = s.height - y - s.invy - s.invb
@@ -79,11 +83,15 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 					s.plonk = icon
 	if s.menu == 0:
 		if s.aimpair:
-			centre, vacancy, w = s.aimpair
+			centre, vacancy, w,d = s.aimpair
 			if buttons & mouse.LEFT:
-				mouse_action_start = s.aimpair
+				s.mouse_action_start = s.aimpair
+				s.inDelete = True
 			if buttons & mouse.RIGHT:
-				mouse_action_start = s.aimpair
+				s.mouse_action_start = s.aimpair
+				s.inInsert = True
+		if s.playercontrol.x == 0 and s.playercontrol.y == 0 and s.playercontrol.z == 0:
+			s.hasMovedSinceStartedClicking = False
 			
 def tadd(a,b):
 	return tuple(map(lambda t: t[0]+t[1],zip(a,b)))
@@ -104,19 +112,22 @@ def bvirange( low, high ):
 				yield (x,y,z)
 
 def game_on_mouse_release(s, x, y, buttons, modifiers):
-	global mouse_action_start
 	if s.menu == 0:
-		if s.aimpair:
-			#if modifiers & VOLUME_MOD and mouse_action_start != None:
-			if mouse_action_start != None:
-				oc,ov,ow = mouse_action_start
-				centre, vacancy,w = s.aimpair
+		if s.aimpair or s.hasMovedSinceStartedClicking:
+			#if modifiers & VOLUME_MOD and s.mouse_action_start != None:
+			if s.mouse_action_start != None:
+				oc,ov,ow,od = s.mouse_action_start
+				centre, vacancy,w,d = s.mouse_action_start
+				if s.aimpair:
+					centre, vacancy,w,d = s.aimpair
 				world = s.worlds[w]
 				updates = []
 				if s.brushsize == 1:
 					if ow == w:
 						if buttons & mouse.LEFT:
 							if s.mode == 0:
+								if s.hasMovedSinceStartedClicking:
+									centre = map(int,( s.headoffset+s.playerpos + s.playeraim * od ).toTuple())
 								s.DebugLog("Deleting from "+repr(oc)+" to "+repr(centre))
 								for pos in bvirange(oc,centre):
 									updates.append(pos)
@@ -138,7 +149,9 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 										world.space[pos] = plonk
 										s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 							if s.mode == 0:
-								s.DebugLog("Inserting from "+repr(oc)+" to "+repr(centre))
+								if s.hasMovedSinceStartedClicking:
+									vacancy = map(int,( s.headoffset+s.playerpos + s.playeraim * od ).toTuple())
+								s.DebugLog("Inserting from "+repr(ov)+" to "+repr(vacancy))
 								for pos in bvirange(ov,vacancy):
 									updates.append(pos)
 								s.StoreForUndo(world,updates)
@@ -167,11 +180,8 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 						if buttons & mouse.RIGHT:
 							s.DebugLog("Creating a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							plonk = s.plonk
-							for x in brange( vacancy[0]-s.brushsize,vacancy[0]+s.brushsize ):
-								for y in brange( vacancy[1]-s.brushsize,vacancy[1]+s.brushsize ):
-									for z in brange( vacancy[2]-s.brushsize,vacancy[2]+s.brushsize ):
-										pos = (x,y,z)
-										updates.append(pos)
+							for pos in bvirange( tsub(vacancy, vbs), tadd(vacancy, vbs) ):
+								updates.append(pos)
 							s.StoreForUndo(world,updates)
 							for pos in virange( tsub(centre, vbs), tadd(centre, vbs) ):
 								off = tsub(pos,centre)
@@ -200,7 +210,9 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 							s.plonk = world.space[centre]
 				if len(updates) > 0:
 					s.refreshFor(world,updates)
-			mouse_action_start = None
+			s.mouse_action_start = None
+			s.inInsert = False
+			s.inDelete = False
 				
 def game_on_mouse_scroll(s,x, y, scroll_x, scroll_y):
 	s.brushsize = min( max( 1, s.brushsize + scroll_y ), 8 );

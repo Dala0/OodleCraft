@@ -116,7 +116,12 @@ state.playerflatside = Vec3(1,0,0)
 state.playeraimyaw = 0
 state.playeraimpitch = 0
 state.playerradius = 0.4
-state.aimpair = ((0,0,0),(0,1,0),0) # aimpair also includes the world
+state.aimpair = ((0,0,0),(0,1,0),0,0) # aimpair also includes the world and the distance
+state.mouse_action_start = None
+state.inDelete = False
+state.inInsert = False
+state.hasMovedSinceStartedClicking = False
+state.headoffset = Vec3(0.5,1.5,0.5)
 
 state.mode = 0
 MAX_MODE = 3
@@ -383,7 +388,7 @@ def findIntersectingBlockAndVacancy(state):
 		s = sin(world.yaw)
 		c = cos(world.yaw)
 		worldlocal = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
-		start = (worldlocal+Vec3(0.5,1.5,0.5)).toTuple()
+		start = (worldlocal+state.headoffset).toTuple()
 		# map to the base grid positions (-0.5 --> -1)
 		startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 
@@ -418,7 +423,7 @@ def findIntersectingBlockAndVacancy(state):
 			current = tuple(map(lambda t: [t,t+1][t<=0], current))
 			nextcell = tadd( currentcell,choice )
 			if nextcell in world.space:
-				best = (nextcell, currentcell, world.index)
+				best = (nextcell, currentcell, world.index,time)
 				besttime = time
 				continue
 			currentcell = nextcell

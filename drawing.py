@@ -34,22 +34,75 @@ def game_on_draw( s ):
 			glTranslatef(i*s.grain,j*s.grain,k*s.grain)
 			glCallList(element)
 			glPopMatrix()
-	if s.aimpair:
+	if s.hasMovedSinceStartedClicking and s.inInsert:
 		glPushMatrix()
-		loc,dest,w = s.aimpair
-		world = s.worlds[w]
+		start = s.mouse_action_start[1]
+		d = s.mouse_action_start[3]
+		end = map(int,( s.headoffset+s.playerpos + s.playeraim * d ).toTuple())
+		scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
+		mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
 		glTranslatef(world.pos.x,world.pos.y,world.pos.z)
 		glRotatef(180.0*world.yaw/3.14159,0,1,0)
-		direc = ( dest[0]-loc[0], dest[1]-loc[1], dest[2]-loc[2] )
-		i,j,k = loc[0],loc[1],loc[2]
-		glTranslatef(i,j,k)
-		glScalef(0.5,0.5,0.5)
+		glTranslatef(mid[0],mid[1],mid[2])
+		glScalef(scale[0],scale[1],scale[2])
 		glColor4f(1.0,0.0,0.0,0.5)
 		texture = s.textures[s.plonk]
 		glEnable(texture.target)
 		glBindTexture(texture.target,texture.id)
-		glCallList(s.cutList[direc])
+		glCallList(s.UNLITCUBE)
 		glPopMatrix()
+	elif s.hasMovedSinceStartedClicking and s.inDelete:
+		glPushMatrix()
+		start = s.mouse_action_start[0]
+		d = s.mouse_action_start[3]
+		end = map(int,( s.headoffset+s.playerpos + s.playeraim * d ).toTuple())
+		scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
+		mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
+		glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+		glRotatef(180.0*world.yaw/3.14159,0,1,0)
+		glTranslatef(mid[0],mid[1],mid[2])
+		glScalef(scale[0],scale[1],scale[2])
+		glColor4f(1.0,0.0,0.0,0.5)
+		texture = s.textures[s.plonk]
+		glEnable(texture.target)
+		glBindTexture(texture.target,texture.id)
+		glCallList(s.UNLITCUBE)
+		glPopMatrix()
+	elif s.aimpair:
+		glPushMatrix()
+		loc,dest,w,d = s.aimpair
+		world = s.worlds[w]
+		if s.mouse_action_start != None:
+			start = dest
+			end = s.mouse_action_start[1]
+			if s.inDelete:
+				start = loc
+				end = s.mouse_action_start[0]
+			scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
+			mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
+			glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+			glRotatef(180.0*world.yaw/3.14159,0,1,0)
+			glTranslatef(mid[0],mid[1],mid[2])
+			glScalef(scale[0],scale[1],scale[2])
+			glColor4f(1.0,0.0,0.0,0.5)
+			texture = s.textures[s.plonk]
+			glEnable(texture.target)
+			glBindTexture(texture.target,texture.id)
+			glCallList(s.UNLITCUBE)
+			glPopMatrix()
+		else:
+			glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+			glRotatef(180.0*world.yaw/3.14159,0,1,0)
+			direc = ( dest[0]-loc[0], dest[1]-loc[1], dest[2]-loc[2] )
+			i,j,k = loc[0],loc[1],loc[2]
+			glTranslatef(i,j,k)
+			glScalef(0.5,0.5,0.5)
+			glColor4f(1.0,0.0,0.0,0.5)
+			texture = s.textures[s.plonk]
+			glEnable(texture.target)
+			glBindTexture(texture.target,texture.id)
+			glCallList(s.cutList[direc])
+			glPopMatrix()
 		
 	for name, player in s.players.items():
 		glPushMatrix()
