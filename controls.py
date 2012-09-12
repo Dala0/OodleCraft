@@ -3,32 +3,39 @@ from pyglet.window import key
 from pyglet.window import mouse
 from pyglet import event
 
+def onAnyMovement(s):
+	if not s.hasMovedSinceStartedClicking and s.mouse_action_start and s.aimpair:
+		mas = s.mouse_action_start
+		s.mouse_action_start = (mas[0],mas[1],mas[2],s.aimpair[3])
+	s.hasMovedSinceStartedClicking = True
+	
+
 def game_on_key_press(s,symbol, modifiers):
 	if s.menu == 0:
 		if symbol == key.U:
 			s.Undo()
 		if symbol == key.A:
 			s.playercontrol.x = 1
-			s.hasMovedSinceStartedClicking = True
+			onAnyMovement(s)
 		if symbol == key.D:
 			s.playercontrol.x = -1
-			s.hasMovedSinceStartedClicking = True
+			onAnyMovement(s)
 		if symbol == key.W:
 			s.playercontrol.z = 1
-			s.hasMovedSinceStartedClicking = True
+			onAnyMovement(s)
 		if symbol == key.S:
 			s.playercontrol.z = -1
-			s.hasMovedSinceStartedClicking = True
+			onAnyMovement(s)
 		if symbol == key.G:
 			s.SeedLand()
 		if symbol == key.F:
 			s.flying = not s.flying
 		if symbol == key.SPACE:
 			s.playercontrol.y = 1
-			s.hasMovedSinceStartedClicking = True
+			onAnyMovement(s)
 		if symbol == key.LSHIFT:
 			s.playercontrol.y = -1
-			s.hasMovedSinceStartedClicking = True
+			onAnyMovement(s)
 		if symbol == key._1:
 			s.plonk = 1
 		if symbol == key._2:
@@ -127,7 +134,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 						if buttons & mouse.LEFT:
 							if s.mode == 0:
 								if s.hasMovedSinceStartedClicking:
-									centre = map(int,( s.headoffset+s.playerpos + s.playeraim * od ).toTuple())
+									centre = s.getInAirPoint()
 								s.DebugLog("Deleting from "+repr(oc)+" to "+repr(centre))
 								for pos in bvirange(oc,centre):
 									updates.append(pos)
@@ -151,9 +158,6 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 							if s.mode == 0:
 								if s.hasMovedSinceStartedClicking:
 									vacancy = s.getInAirPoint()
-									#start = ( s.headoffset+s.playerpos + s.playeraim * od ).toTuple()
-									#startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
-									#vacancy = map(int,startcell)
 								s.DebugLog("Inserting from "+repr(ov)+" to "+repr(vacancy))
 								for pos in bvirange(ov,vacancy):
 									updates.append(pos)

@@ -73,6 +73,7 @@ state.debuglog = []
 state.debuglimit = 25
 courier = font.load('Courier', 8, bold=True, italic=False)
 def DebugLog( s, message ):
+	return
 	glyphs = courier.get_glyphs(message)
 	s.debuglog.append( (message,GlyphString(message,glyphs)) )
 	if len( s.debuglog ) > s.debuglimit:
@@ -378,23 +379,32 @@ def tdiv(a,b):
 def tmul(a,b):
 	return tuple(map(lambda t: t[0]*t[1],zip(a,b)))
 
+def localFromWorld(w, start, aim):
+	wl = start-w.pos
+	s = sin(w.yaw)
+	c = cos(w.yaw)
+	localStart = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
+	localAim = Vec3( c * aim.x - s * aim.z, aim.y, aim.z * c + s * aim.x )
+	return (localStart,localAim)
+
 def findIntersectingBlockAndVacancy(state):
 	best = None
 	besttime = 10
 
 	for world in state.worlds:
 		# offset by 0.5 for the grid, then one in Y for the height of the player
-		wl = state.playerpos-world.pos
-		s = sin(world.yaw)
-		c = cos(world.yaw)
-		worldlocal = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
+		worldlocal,worldaim = localFromWorld(world,state.playerpos,state.playeraim)
+		#wl = state.playerpos-world.pos
+		#s = sin(world.yaw)
+		#c = cos(world.yaw)
+		#worldlocal = Vec3( c * wl.x - s * wl.z, wl.y, wl.z * c + s * wl.x )
 		start = (worldlocal+state.headoffset).toTuple()
 		# map to the base grid positions (-0.5 --> -1)
 		startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 
 		# get the direction of the ray cast
-		wa = state.playeraim
-		worldaim = Vec3( c * wa.x - s * wa.z, wa.y, wa.z * c + s * wa.x )
+		#wa = state.playeraim
+		#worldaim = Vec3( c * wa.x - s * wa.z, wa.y, wa.z * c + s * wa.x )
 		direc = worldaim.toTuple()
 		# get the current distance to go in each axis
 		current = tsub( start, startcell )
@@ -432,7 +442,9 @@ def findIntersectingBlockAndVacancy(state):
 	return best
 
 def getInAirPoint(state):
-	start = ( state.headoffset+state.playerpos + state.playeraim * state.mouse_action_start[3] ).toTuple()
+	world = state.worlds[state.mouse_action_start[2]]
+	worldlocal,worldaim = localFromWorld(world,state.playerpos,state.playeraim)
+	start = ( state.headoffset+worldlocal + worldaim * state.mouse_action_start[3] ).toTuple()
 	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
 	return map(int,startcell)
 state.getInAirPoint = lambda : getInAirPoint(state)
