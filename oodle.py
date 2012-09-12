@@ -431,6 +431,11 @@ def findIntersectingBlockAndVacancy(state):
 			times = tuple(map(lambda t: t[0]/[t[1],0.0001][t[1]==0], zip(current,advance)))
 	return best
 
+def getInAirPoint(state):
+	start = ( state.headoffset+state.playerpos + state.playeraim * state.mouse_action_start[3] ).toTuple()
+	startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
+	return map(int,startcell)
+state.getInAirPoint = lambda : getInAirPoint(state)
 #updateProcGen()
 
 def vrange( low, high ):

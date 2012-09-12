@@ -150,7 +150,10 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 										s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
 							if s.mode == 0:
 								if s.hasMovedSinceStartedClicking:
-									vacancy = map(int,( s.headoffset+s.playerpos + s.playeraim * od ).toTuple())
+									vacancy = s.getInAirPoint()
+									#start = ( s.headoffset+s.playerpos + s.playeraim * od ).toTuple()
+									#startcell = tuple(map(lambda t: int([t,t-1][t<0]), start))
+									#vacancy = map(int,startcell)
 								s.DebugLog("Inserting from "+repr(ov)+" to "+repr(vacancy))
 								for pos in bvirange(ov,vacancy):
 									updates.append(pos)

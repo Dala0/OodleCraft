@@ -37,8 +37,7 @@ def game_on_draw( s ):
 	if s.hasMovedSinceStartedClicking and s.inInsert:
 		glPushMatrix()
 		start = s.mouse_action_start[1]
-		d = s.mouse_action_start[3]
-		end = map(int,( s.headoffset+s.playerpos + s.playeraim * d ).toTuple())
+		end = s.getInAirPoint()
 		scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
 		mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
 		glTranslatef(world.pos.x,world.pos.y,world.pos.z)
