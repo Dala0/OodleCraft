@@ -98,12 +98,12 @@ state.cursortexture = cursor.get_texture()
 
 #drawlists for cutting
 cutList = {}
-cutList[(0,1,0)] = glPrims.YPOS
-cutList[(0,-1,0)] = glPrims.YNEG
-cutList[(1,0,0)] = glPrims.XPOS
-cutList[(-1,0,0)] = glPrims.XNEG
-cutList[(0,0,1)] = glPrims.ZPOS
-cutList[(0,0,-1)] = glPrims.ZNEG
+cutList[(0,1,0)] = glPrims.draw_YPOS
+cutList[(0,-1,0)] = glPrims.draw_YNEG
+cutList[(1,0,0)] = glPrims.draw_XPOS
+cutList[(-1,0,0)] = glPrims.draw_XNEG
+cutList[(0,0,1)] = glPrims.draw_ZPOS
+cutList[(0,0,-1)] = glPrims.draw_ZNEG
 state.cutList = cutList
 
 #player globals

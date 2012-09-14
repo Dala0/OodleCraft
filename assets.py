@@ -11,9 +11,11 @@ if len( sys.argv ) > 1:
 dirt = 0
 dads = 0
 stuff = 0;
+mine = 0;
 
 white = (1,1,1)
 black = (0,0,0)
+transparent = (0,0,0,0)
 
 if loadpink:
 	dirt = image.load('sprites/pinkdirt.png')
@@ -23,6 +25,7 @@ else:
 	dirt = image.load('sprites/dirt.png')
 	dads = image.load('sprites/dads.png')
 	stuff = image.load('sprites/stuff.png')
+mine = image.load('sprites/terrain.png')
 
 def get_sub_icon( asset, x, y, colortoreplacewithalpha = None ):
 	icon = sub = asset.get_region(16*x,16*y,16,16)
@@ -30,7 +33,8 @@ def get_sub_icon( asset, x, y, colortoreplacewithalpha = None ):
 	
 def asset( name, source, x, y, colortoreplacewithalpha = None ):
 	global icons
-	icons[ name ] = get_sub_icon( source, x,7-y, colortoreplacewithalpha )
+	height = source.height / 16
+	icons[ name ] = get_sub_icon( source, x,height-1-y, colortoreplacewithalpha )
 	
 asset( 'black', stuff, 2,0, white )
 asset( 'person', stuff, 1,2, white )
@@ -88,3 +92,29 @@ asset( 'crack14', dads, 6,6, white )
 asset( 'crack15', dads, 6,7, white )
 asset( 'light', dads, 0,7 )
 asset( 'cursor', dads, 0,0 )
+
+asset( 'mc_stone', mine, 1, 0, transparent )
+asset( 'mc_cobble', mine, 0, 1, transparent )
+asset( 'mc_admin', mine, 1, 1, transparent )
+asset( 'mc_dirt', mine, 2, 0, transparent )
+asset( 'mc_plank', mine, 4, 0, transparent )
+asset( 'mc_gravel', mine, 3, 1, transparent )
+asset( 'mc_gold', mine, 0, 2, transparent )
+asset( 'mc_iron', mine, 1, 2, transparent )
+asset( 'mc_coal', mine, 2, 2, transparent )
+asset( 'mc_diamond', mine, 2, 3, transparent )
+asset( 'mc_redstone', mine, 3, 3, transparent )
+asset( 'mc_glass', mine, 1, 3, transparent )
+asset( 'mc_chest', mine, 10, 1, transparent )
+asset( 'mc_craft', mine, 11, 2, transparent )
+asset( 'mc_furnace', mine, 12, 2, transparent )
+asset( 'mc_lapis', mine, 0, 10, transparent )
+asset( 'mc_lamp', mine, 4, 13, transparent )
+asset( 'mc_wood', mine, 4, 1, transparent )
+asset( 'mc_brick', mine, 7, 0, transparent )
+asset( 'mc_obsidian', mine, 5, 2, transparent )
+asset( 'mc_nether', mine, 7, 6, transparent )
+asset( 'mc_face', mine, 8, 6, transparent )
+asset( 'mc_light', mine, 9, 6, transparent )
+asset( 'mc_sand', mine, 2, 1, transparent )
+

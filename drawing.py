@@ -101,7 +101,8 @@ def game_on_draw( s ):
 			texture = s.textures[s.plonk]
 			glEnable(texture.target)
 			glBindTexture(texture.target,texture.id)
-			glCallList(s.cutList[direc])
+			s.cutList[direc]()
+			#glCallList(s.cutList[direc])
 			glPopMatrix()
 		
 	for name, player in s.players.items():
@@ -122,7 +123,8 @@ def game_on_draw( s ):
 		glScalef(16.0,16.0,0.1)
 		glEnable(s.cursortexture.target)
 		glBindTexture(s.cursortexture.target,s.cursortexture.id)
-		glCallList(s.ZNEG)
+		s.draw_ZNEG()
+		#glCallList(s.ZNEG)
 	
 	glColor4f(1.0,1.0,1.0,0.9)
 	glDisable(GL_DEPTH_TEST)
@@ -133,7 +135,8 @@ def game_on_draw( s ):
 	glEnable(texture.target)
 	glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 	glBindTexture(texture.target,texture.id)
-	glCallList(s.ZNEG)
+	s.draw_ZNEG()
+	#glCallList(s.ZNEG)
 	
 	glLoadIdentity()
 	glTranslatef(8+16+16+8-w,8+16-h,0)
@@ -178,7 +181,8 @@ def game_on_draw( s ):
 		glEnable(texture.target)
 		glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 		glBindTexture(texture.target,texture.id)
-		glCallList(s.ZNEG)
+		s.draw_ZNEG()
+		#glCallList(s.ZNEG)
 
 		glColor4f(1.0,1.0,1.0,1.0)
 		for i in range(s.MAX_ID):
@@ -193,6 +197,7 @@ def game_on_draw( s ):
 				glEnable(texture.target)
 				glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 				glBindTexture(texture.target,texture.id)
-				glCallList(s.ZNEG)
+				s.draw_ZNEG()
+				#glCallList(s.ZNEG)
 
 
