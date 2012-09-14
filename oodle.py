@@ -43,9 +43,6 @@ state = GameState()
 glPrims.filloutPrims( state )
 materials.addmaterials( state )
 
-#import procgen
-#procgen.addprocgentostate( state )
-
 import netcore
 
 state.c = netcore.netcore()
@@ -135,10 +132,6 @@ def switchMode(state):
 	elif state.mode == 2:
 		state.SetMessage(state,"Driving Mode")
 state.switchMode = lambda : switchMode( state )
-
-#x = 0
-#d = 1
-#t = 1
 
 acceleration = 0.01
 
