@@ -34,40 +34,43 @@ def game_on_draw( s ):
 			glTranslatef(i*s.grain,j*s.grain,k*s.grain)
 			glCallList(element)
 			glPopMatrix()
-	if s.hasMovedSinceStartedClicking and s.inInsert:
-		glPushMatrix()
-		world = s.worlds[s.mouse_action_start[2]]
-		start = s.mouse_action_start[1]
-		end = s.getInAirPoint()
-		scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
-		mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
-		glTranslatef(world.pos.x,world.pos.y,world.pos.z)
-		glRotatef(180.0*world.yaw/3.14159,0,1,0)
-		glTranslatef(mid[0],mid[1],mid[2])
-		glScalef(scale[0],scale[1],scale[2])
-		glColor4f(1.0,0.0,0.0,0.5)
-		texture = s.textures[s.plonk]
-		glEnable(texture.target)
-		glBindTexture(texture.target,texture.id)
-		glCallList(s.UNLITCUBE)
-		glPopMatrix()
-	elif s.hasMovedSinceStartedClicking and s.inDelete:
-		glPushMatrix()
-		world = s.worlds[s.mouse_action_start[2]]
-		start = s.mouse_action_start[0]
-		end = s.getInAirPoint()
-		scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
-		mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
-		glTranslatef(world.pos.x,world.pos.y,world.pos.z)
-		glRotatef(180.0*world.yaw/3.14159,0,1,0)
-		glTranslatef(mid[0],mid[1],mid[2])
-		glScalef(scale[0],scale[1],scale[2])
-		glColor4f(1.0,0.0,0.0,0.5)
-		texture = s.textures[s.plonk]
-		glEnable(texture.target)
-		glBindTexture(texture.target,texture.id)
-		glCallList(s.UNLITCUBE)
-		glPopMatrix()
+	showVolume = s.hasMovedSinceStartedClicking and ( s.inInsert or s.inDelete )
+	subtractive = s.inDelete or ( s.mode == s.MODE_PAINTING )
+	if showVolume:
+		if not subtractive:
+			glPushMatrix()
+			world = s.worlds[s.mouse_action_start[2]]
+			start = s.mouse_action_start[1]
+			end = s.getInAirPoint()
+			scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
+			mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
+			glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+			glRotatef(180.0*world.yaw/3.14159,0,1,0)
+			glTranslatef(mid[0],mid[1],mid[2])
+			glScalef(scale[0],scale[1],scale[2])
+			glColor4f(1.0,0.0,0.0,0.5)
+			texture = s.textures[s.plonk]
+			glEnable(texture.target)
+			glBindTexture(texture.target,texture.id)
+			glCallList(s.UNLITCUBE)
+			glPopMatrix()
+		else:
+			glPushMatrix()
+			world = s.worlds[s.mouse_action_start[2]]
+			start = s.mouse_action_start[0]
+			end = s.getInAirPoint()
+			scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))
+			mid = map(lambda x:(x[0]+x[1])*0.5,zip(end,start))
+			glTranslatef(world.pos.x,world.pos.y,world.pos.z)
+			glRotatef(180.0*world.yaw/3.14159,0,1,0)
+			glTranslatef(mid[0],mid[1],mid[2])
+			glScalef(scale[0],scale[1],scale[2])
+			glColor4f(1.0,0.0,0.0,0.5)
+			texture = s.textures[s.plonk]
+			glEnable(texture.target)
+			glBindTexture(texture.target,texture.id)
+			glCallList(s.UNLITCUBE)
+			glPopMatrix()
 	elif s.aimpair:
 		glPushMatrix()
 		loc,dest,w,d = s.aimpair
@@ -75,7 +78,7 @@ def game_on_draw( s ):
 		if s.mouse_action_start != None:
 			start = dest
 			end = s.mouse_action_start[1]
-			if s.inDelete:
+			if subtractive:
 				start = loc
 				end = s.mouse_action_start[0]
 			scale = map(lambda x:0.5*abs(x[0]-x[1])+0.51,zip(end,start))

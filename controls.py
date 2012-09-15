@@ -132,7 +132,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 				if s.brushsize == 1:
 					if ow == w:
 						if buttons & mouse.LEFT:
-							if s.mode == 0:
+							if s.mode == s.MODE_EDIT:
 								if s.hasMovedSinceStartedClicking:
 									centre = s.getInAirPoint()
 								s.DebugLog("Deleting from "+repr(oc)+" to "+repr(centre))
@@ -143,19 +143,21 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 									if pos in world.space:
 										del world.space[pos]
 										s.c.send("d"+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
-							if s.mode == 1:
+							if s.mode == s.MODE_PAINTING:
 								s.DebugLog("Picking from "+repr(centre))
 								s.plonk = world.space[centre]
 						if buttons & mouse.RIGHT:
 							plonk = s.plonk
-							if s.mode == 1: #painting
+							if s.mode == s.MODE_PAINTING: #painting
+								if s.hasMovedSinceStartedClicking:
+									centre = s.getInAirPoint()
 								s.DebugLog("Painting over range "+repr(oc)+" to "+repr(centre))
 								for pos in virange(oc,centre):
 									if pos in world.space:
 										updates.append(pos)
 										world.space[pos] = plonk
 										s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
-							if s.mode == 0:
+							if s.mode == s.MODE_EDIT:
 								if s.hasMovedSinceStartedClicking:
 									vacancy = s.getInAirPoint()
 								s.DebugLog("Inserting from "+repr(ov)+" to "+repr(vacancy))
@@ -171,7 +173,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 					vbs = (bs,bs,bs)
 					reduction = 0.5
 					limit = pow(bs-reduction,2)
-					if s.mode == 0:
+					if s.mode == s.MODE_EDIT:
 						if buttons & mouse.LEFT:
 							s.DebugLog("Deleting a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							for pos in bvirange( tsub(centre, vbs), tadd(centre, vbs) ):
@@ -196,7 +198,7 @@ def game_on_mouse_release(s, x, y, buttons, modifiers):
 								if d2 < limit:
 									world.space[pos] = plonk
 									s.c.send("a"+str(plonk)+','+str(pos[0])+','+str(pos[1])+','+str(pos[2])+','+str(w))
-					if s.mode == 1:
+					if s.mode == s.MODE_PAINTING:
 						if buttons & mouse.RIGHT:
 							s.DebugLog("Creating a sphere at "+repr(centre)+" rad "+str(s.brushsize))
 							plonk = s.plonk

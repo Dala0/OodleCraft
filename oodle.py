@@ -122,14 +122,17 @@ state.hasMovedSinceStartedClicking = False
 state.headoffset = Vec3(0.5,1.5,0.5)
 
 state.mode = 0
-MAX_MODE = 3
+state.MODE_EDIT = 0
+state.MODE_PAINTING = 1
+state.MODE_DRIVING = 2
+state.MODE_MAX_MODE = 3
 def switchMode(state):
-	state.mode = (1+state.mode)%MAX_MODE
-	if state.mode == 0:
+	state.mode = (1+state.mode)%state.MODE_MAX_MODE
+	if state.mode == state.MODE_EDIT:
 		state.SetMessage(state,"Editing Mode")
-	elif state.mode == 1:
+	elif state.mode == state.MODE_PAINTING:
 		state.SetMessage(state,"Painting Mode")
-	elif state.mode == 2:
+	elif state.mode == state.MODE_DRIVING:
 		state.SetMessage(state,"Driving Mode")
 state.switchMode = lambda : switchMode( state )
 
@@ -343,7 +346,7 @@ def update(dt):
 	state.playerpos = state.playerpos + state.playervel
 	collisionAndResponse(state.worlds[0])
 	playerMotion = state.playerpos - oldPlayerPos
-	if state.mode == 2: # driving mode
+	if state.mode == state.MODE_DRIVING: # driving mode
 		if state.currentWorld != state.worlds[0]:
 			state.currentWorld.pos = state.currentWorld.pos + playerMotion
 	state.aimpair = findIntersectingBlockAndVacancy(state)
@@ -652,7 +655,7 @@ def changeaim( state, yaw, pitch ):
 		state.playeraimyaw = state.playeraimyaw + PI*2
 	if state.playeraimyaw > PI:
 		state.playeraimyaw = state.playeraimyaw - PI*2
-	if state.mode == 2: # driving mode
+	if state.mode == state.MODE_DRIVING: # driving mode
 		if state.currentWorld != state.worlds[0]:
 			state.currentWorld.yaw = state.currentWorld.yaw + yaw
 state.changeaim = lambda y,p: changeaim(state,y,p)
