@@ -252,6 +252,7 @@ def netpush(dt):
 def collidable(state, world, point):
 	return point in world.space and world.space[point] != state.reverselookup['water']
 def collisionAndResponse(world):
+	# change to a cube collision (it's currently trying to be a cylinder collision really badly)
 	pp = state.playerpos
 	lx = int(pp.x)
 	ly = int(pp.y)
