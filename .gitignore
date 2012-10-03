@@ -1,5 +1,5 @@
 *.pyc
 *.swp
 *.*~
-binraspo.sav
-raspo.sav.bak
+*.sav
+*.bak
