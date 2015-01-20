@@ -2,3 +2,19 @@ python powered pyglet assisted minecraft inspired asset editor for a game I've b
 
 Generally this project is under a fairly open license, but there is one file taken from Minecraft that is not mine and is not covered in any license attached to this repository or tree or however you got hold of this.
 terrain.png in the sprites directory is not copyright free and you do not have permission to use it.
+
+Controls
+--------
+
+Up = Space bar
+Down = Shift
+Add block = Right mouse button
+Remove block = Left mouse button
+Material menu = E
+Forward = W
+Back = S
+Left = A
+Right = D
+Change brush size = Mouse wheel
+Quit = Escape
+Change mode = Tab
