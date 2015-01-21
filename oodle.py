@@ -452,7 +452,187 @@ def vrange( low, high ):
 			for z in xrange( int(low[2]), int(high[2]) ):
 				yield (x,y,z)
 
-def makeWorldList(state,world,x,y,z):
+def makeWorldListCube(state,world,x,y,z):
+	listName = hash(repr((world.index,x,y,z)))
+	#print (x,y,z)
+	#print listName
+	WATER = state.reverselookup['water']
+	low = Vec3(x,y,z)*state.grain
+	hi = Vec3(x+1,y+1,z+1)*state.grain
+	glNewList(listName,GL_COMPILE)
+	for loc in vrange(low.toTuple(),hi.toTuple()):
+		if loc in world.space:
+			element = world.space[loc]
+			l = Vec3(loc[0],loc[1],loc[2])
+			i,j,k = (l-low).toTuple()
+			#isWater = element == WATER
+			sides = []
+			xpos = (loc[0]+1,loc[1]+0,loc[2]+0)
+			ypos = (loc[0]+0,loc[1]+1,loc[2]+0)
+			zpos = (loc[0]+0,loc[1]+0,loc[2]+1)
+			xneg = (loc[0]-1,loc[1]-0,loc[2]-0)
+			yneg = (loc[0]-0,loc[1]-1,loc[2]-0)
+			zneg = (loc[0]-0,loc[1]-0,loc[2]-1)
+			XP = xpos in world.space
+			XN = xneg in world.space
+			YP = ypos in world.space
+			YN = yneg in world.space
+			ZP = zpos in world.space
+			ZN = zneg in world.space
+			XPYP = (loc[0]+1,loc[1]+1,loc[2]+0) in world.space
+			XNYP = (loc[0]-1,loc[1]+1,loc[2]+0) in world.space
+			XPYN = (loc[0]+1,loc[1]-1,loc[2]+0) in world.space
+			XNYN = (loc[0]-1,loc[1]-1,loc[2]+0) in world.space
+			XPZP = (loc[0]+1,loc[1]+0,loc[2]+1) in world.space
+			XNZP = (loc[0]-1,loc[1]+0,loc[2]+1) in world.space
+			XPZN = (loc[0]+1,loc[1]+0,loc[2]-1) in world.space
+			XNZN = (loc[0]-1,loc[1]+0,loc[2]-1) in world.space
+			YPZP = (loc[0]+0,loc[1]+1,loc[2]+1) in world.space
+			YNZP = (loc[0]+0,loc[1]-1,loc[2]+1) in world.space
+			YPZN = (loc[0]+0,loc[1]+1,loc[2]-1) in world.space
+			YNZN = (loc[0]+0,loc[1]-1,loc[2]-1) in world.space
+			XPYPZP = (loc[0]+1,loc[1]+1,loc[2]+1) in world.space
+			XNYPZP = (loc[0]-1,loc[1]+1,loc[2]+1) in world.space
+			XPYNZP = (loc[0]+1,loc[1]-1,loc[2]+1) in world.space
+			XNYNZP = (loc[0]-1,loc[1]-1,loc[2]+1) in world.space
+			XPYPZN = (loc[0]+1,loc[1]+1,loc[2]-1) in world.space
+			XNYPZN = (loc[0]-1,loc[1]+1,loc[2]-1) in world.space
+			XPYNZN = (loc[0]+1,loc[1]-1,loc[2]-1) in world.space
+			XNYNZN = (loc[0]-1,loc[1]-1,loc[2]-1) in world.space
+			
+			# faces
+			if not XP:
+				sides.append( state.XPOS )
+				if YP and not XPYP: sides.append(state.FACE_XPOS_YP)
+				if YP and XPYP: sides.append(state.FACE_XPOS_YP_O)
+				if YN and not XPYN: sides.append(state.FACE_XPOS_YN)
+				if YN and XPYN: sides.append(state.FACE_XPOS_YN_O)
+				if ZP and not XPZP: sides.append(state.FACE_XPOS_ZP)
+				if ZP and XPZP: sides.append(state.FACE_XPOS_ZP_O)
+				if ZN and not XPZN: sides.append(state.FACE_XPOS_ZN)
+				if ZN and XPZN: sides.append(state.FACE_XPOS_ZN_O)
+				if YP and ZP and YPZP and not XPYPZP and not XPYP and not XPZP: sides.append(state.FACE_XPOS_YPZP)
+				if YP and ZN and YPZN and not XPYPZN and not XPYP and not XPZN: sides.append(state.FACE_XPOS_YPZN)
+				if YN and ZP and YNZP and not XPYNZP and not XPYP and not XPZP: sides.append(state.FACE_XPOS_YNZP)
+				if YN and ZN and YNZN and not XPYNZN and not XPYP and not XPZN: sides.append(state.FACE_XPOS_YNZN)
+				if YP and ZP and not YPZP and not XPYPZP and not XPYP and not XPZP: sides.append(state.FACE_XPOS_YPZPT)
+				if YP and ZN and not YPZN and not XPYPZN and not XPYP and not XPZN: sides.append(state.FACE_XPOS_YPZNT)
+				if YN and ZP and not YNZP and not XPYNZP and not XPYN and not XPZP: sides.append(state.FACE_XPOS_YNZPT)
+				if YN and ZN and not YNZN and not XPYNZN and not XPYN and not XPZN: sides.append(state.FACE_XPOS_YNZNT)
+
+			if not XN:
+				sides.append( state.XNEG )
+				if YP and not XNYP: sides.append(state.FACE_XNEG_YP)
+				if YP and XNYP: sides.append(state.FACE_XNEG_YP_O)
+				if YN and not XNYN: sides.append(state.FACE_XNEG_YN)
+				if YN and XNYN: sides.append(state.FACE_XNEG_YN_O)
+				if ZP and not XNZP: sides.append(state.FACE_XNEG_ZP)
+				if ZP and XNZP: sides.append(state.FACE_XNEG_ZP_O)
+				if ZN and not XNZN: sides.append(state.FACE_XNEG_ZN)
+				if ZN and XNZN: sides.append(state.FACE_XNEG_ZN_O)
+				if YP and ZP and YPZP and not XNYPZP and not XNYP and not XNZP: sides.append(state.FACE_XNEG_YPZP)
+				if YP and ZN and YPZN and not XNYPZN and not XNYP and not XNZN: sides.append(state.FACE_XNEG_YPZN)
+				if YN and ZP and YNZP and not XNYNZP and not XNYP and not XNZP: sides.append(state.FACE_XNEG_YNZP)
+				if YN and ZN and YNZN and not XNYNZN and not XNYP and not XNZN: sides.append(state.FACE_XNEG_YNZN)
+				if YP and ZP and not YPZP and not XNYPZP and not XNYP and not XNZP: sides.append(state.FACE_XNEG_YPZPT)
+				if YP and ZN and not YPZN and not XNYPZN and not XNYP and not XNZN: sides.append(state.FACE_XNEG_YPZNT)
+				if YN and ZP and not YNZP and not XNYNZP and not XNYN and not XNZP: sides.append(state.FACE_XNEG_YNZPT)
+				if YN and ZN and not YNZN and not XNYNZN and not XNYN and not XNZN: sides.append(state.FACE_XNEG_YNZNT)
+
+			if not YP:
+				sides.append( state.YPOS )
+				if XP and not XPYP: sides.append(state.FACE_YPOS_XP)
+				if XP and XPYP: sides.append(state.FACE_YPOS_XP_O)
+				if XN and not XNYP: sides.append(state.FACE_YPOS_XN)
+				if XN and XNYP: sides.append(state.FACE_YPOS_XN_O)
+				if ZP and not YPZP: sides.append(state.FACE_YPOS_ZP)
+				if ZP and YPZP: sides.append(state.FACE_YPOS_ZP_O)
+				if ZN and not YPZN: sides.append(state.FACE_YPOS_ZN)
+				if ZN and YPZN: sides.append(state.FACE_YPOS_ZN_O)
+				if XP and ZP and XPZP and not XPYPZP and not XPYP and not YPZP: sides.append(state.FACE_YPOS_XPZP)
+				if XP and ZN and XPZN and not XPYPZN and not XPYP and not YPZN: sides.append(state.FACE_YPOS_XPZN)
+				if XN and ZP and XNZP and not XNYPZP and not XNYP and not YPZP: sides.append(state.FACE_YPOS_XNZP)
+				if XN and ZN and XNZN and not XNYPZN and not XNYP and not YPZN: sides.append(state.FACE_YPOS_XNZN)
+				if XP and ZP and not XPZP and not XPYPZP and not XPYP and not YPZP: sides.append(state.FACE_YPOS_XPZPT)
+				if XP and ZN and not XPZN and not XPYPZN and not XPYP and not YPZN: sides.append(state.FACE_YPOS_XPZNT)
+				if XN and ZP and not XNZP and not XNYPZP and not XNYP and not YPZP: sides.append(state.FACE_YPOS_XNZPT)
+				if XN and ZN and not XNZN and not XNYPZN and not XNYP and not YPZN: sides.append(state.FACE_YPOS_XNZNT)
+
+			if not YN:
+				sides.append( state.YNEG )
+				if XP and not XPYN: sides.append(state.FACE_YNEG_XP)
+				if XP and XPYN: sides.append(state.FACE_YNEG_XP_O)
+				if XN and not XNYN: sides.append(state.FACE_YNEG_XN)
+				if XN and XNYN: sides.append(state.FACE_YNEG_XN_O)
+				if ZP and not YNZP: sides.append(state.FACE_YNEG_ZP)
+				if ZP and YNZP: sides.append(state.FACE_YNEG_ZP_O)
+				if ZN and not YNZN: sides.append(state.FACE_YNEG_ZN)
+				if ZN and YNZN: sides.append(state.FACE_YNEG_ZN_O)
+				if XP and ZP and XPZP and not XPYNZP and not XPYN and not YNZP: sides.append(state.FACE_YNEG_XPZP)
+				if XP and ZN and XPZN and not XPYNZN and not XPYN and not YNZN: sides.append(state.FACE_YNEG_XPZN)
+				if XN and ZP and XNZP and not XNYNZP and not XNYN and not YNZP: sides.append(state.FACE_YNEG_XNZP)
+				if XN and ZN and XNZN and not XNYNZN and not XNYN and not YNZN: sides.append(state.FACE_YNEG_XNZN)
+				if XP and ZP and not XPZP and not XPYNZP and not XPYN and not YNZP: sides.append(state.FACE_YNEG_XPZPT)
+				if XP and ZN and not XPZN and not XPYNZN and not XPYN and not YNZN: sides.append(state.FACE_YNEG_XPZNT)
+				if XN and ZP and not XNZP and not XNYNZP and not XNYN and not YNZP: sides.append(state.FACE_YNEG_XNZPT)
+				if XN and ZN and not XNZN and not XNYNZN and not XNYN and not YNZN: sides.append(state.FACE_YNEG_XNZNT)
+
+			if not ZP:
+				sides.append( state.ZPOS )
+				if XP and not XPZP: sides.append(state.FACE_ZPOS_XP)
+				if XP and XPZP: sides.append(state.FACE_ZPOS_XP_O)
+				if XN and not XNZP: sides.append(state.FACE_ZPOS_XN)
+				if XN and XNZP: sides.append(state.FACE_ZPOS_XN_O)
+				if YP and not YPZP: sides.append(state.FACE_ZPOS_YP)
+				if YP and YPZP: sides.append(state.FACE_ZPOS_YP_O)
+				if YN and not YNZP: sides.append(state.FACE_ZPOS_YN)
+				if YN and YNZP: sides.append(state.FACE_ZPOS_YN_O)
+				if XP and YP and XPYP and not XPYPZP and not XPZP and not YPZP: sides.append(state.FACE_ZPOS_XPYP)
+				if XP and YN and XPYN and not XPYNZP and not XPZP and not YNZP: sides.append(state.FACE_ZPOS_XPYN)
+				if XN and YP and XNYP and not XNYPZP and not XNZP and not YPZP: sides.append(state.FACE_ZPOS_XNYP)
+				if XN and YN and XNYN and not XNYNZP and not XNZP and not YNZP: sides.append(state.FACE_ZPOS_XNYN)
+				if XP and YP and not XPYP and not XPYPZP and not XPZP and not YPZP: sides.append(state.FACE_ZPOS_XPYPT)
+				if XP and YN and not XPYN and not XPYNZP and not XPZP and not YNZP: sides.append(state.FACE_ZPOS_XPYNT)
+				if XN and YP and not XNYP and not XNYPZP and not XNZP and not YPZP: sides.append(state.FACE_ZPOS_XNYPT)
+				if XN and YN and not XNYN and not XNYNZP and not XNZP and not YNZP: sides.append(state.FACE_ZPOS_XNYNT)
+
+			if not ZN:
+				sides.append( state.ZNEG )
+				if XP and not XPZN: sides.append(state.FACE_ZNEG_XP)
+				if XP and XPZN: sides.append(state.FACE_ZNEG_XP_O)
+				if XN and not XNZN: sides.append(state.FACE_ZNEG_XN)
+				if XN and XNZN: sides.append(state.FACE_ZNEG_XN_O)
+				if YP and not YPZN: sides.append(state.FACE_ZNEG_YP)
+				if YP and YPZN: sides.append(state.FACE_ZNEG_YP_O)
+				if YN and not YNZN: sides.append(state.FACE_ZNEG_YN)
+				if YN and YNZN: sides.append(state.FACE_ZNEG_YN_O)
+				if XP and YP and XPYP and not XPYPZN and not XPZN and not YPZN: sides.append(state.FACE_ZNEG_XPYP)
+				if XP and YN and XPYN and not XPYNZN and not XPZN and not YNZN: sides.append(state.FACE_ZNEG_XPYN)
+				if XN and YP and XNYP and not XNYPZN and not XNZN and not YPZN: sides.append(state.FACE_ZNEG_XNYP)
+				if XN and YN and XNYN and not XNYNZN and not XNZN and not YNZN: sides.append(state.FACE_ZNEG_XNYN)
+				if XP and YP and not XPYP and not XPYPZN and not XPZN and not YPZN: sides.append(state.FACE_ZNEG_XPYPT)
+				if XP and YN and not XPYN and not XPYNZN and not XPZN and not YNZN: sides.append(state.FACE_ZNEG_XPYNT)
+				if XN and YP and not XNYP and not XNYPZN and not XNZN and not YPZN: sides.append(state.FACE_ZNEG_XNYPT)
+				if XN and YN and not XNYN and not XNYNZN and not XNZN and not YNZN: sides.append(state.FACE_ZNEG_XNYNT)
+			
+			if len(sides) > 0:
+				glPushMatrix()
+				glTranslatef(i,j,k)
+				glScalef(0.5,0.5,0.5)
+				texture = state.textures[element]
+				glEnable(texture.target)
+				glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+				glBindTexture(texture.target,texture.id)
+				glBegin(GL_QUADS)
+				for side in sides:
+					state.draw_face(side, True, 1.0, 1.0)
+
+				glEnd()
+				glPopMatrix()
+	glEndList()
+	return listName
+
+def makeWorldListOddThings(state,world,x,y,z):
 	listName = hash(repr((world.index,x,y,z)))
 	#print (x,y,z)
 	#print listName
@@ -715,7 +895,7 @@ def makeWorldList(state,world,x,y,z):
 				glPopMatrix()
 	glEndList()
 	return listName
-state.makeWorldList = lambda world,x,y,z : makeWorldList(state, world,x,y,z)
+state.makeWorldList = lambda world,x,y,z : makeWorldListCube(state, world,x,y,z)
 	
 def updateWorldList(state,world,adjusted):
 	x,y,z = adjusted
