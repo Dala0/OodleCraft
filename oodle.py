@@ -64,7 +64,7 @@ glyphs = None
 def SetMessage( s, message ):
 	glyphs = arial.get_glyphs(message)
 	s.glyph_string = GlyphString(message, glyphs)
-SetMessage(state, "Tab to switch mode, ESC for menu")
+SetMessage(state, "Tab to switch mode, E for menu")
 state.SetMessage = SetMessage
 state.debuglog = []
 state.debuglimit = 25
