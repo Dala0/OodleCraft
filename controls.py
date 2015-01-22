@@ -78,7 +78,7 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 	if s.menu == 1:
 		sx = x - s.invx - s.invb
 		sy = s.height - y - s.invy - s.invb
-		if sx > 0 and sx < 40 * 8 and sy > 0 and sy < 40 * 8:
+		if sx > 0 and sx < 40 * 8 and sy > 0 and sy < 40 * 9:
 			iconx = sx/40
 			icony = sy/40
 			sx = sx - iconx*40
