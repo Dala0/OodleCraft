@@ -1,7 +1,6 @@
 python powered pyglet assisted minecraft inspired asset editor for a game I've been meaning to make for many years.
 
-Generally this project is under a fairly open license, but there is one file taken from Minecraft that is not mine and is not covered in any license attached to this repository or tree or however you got hold of this.
-terrain.png in the sprites directory is not copyright free and you do not have permission to use it.
+Generally this project is under a fairly open license.
 
 Controls
 --------
