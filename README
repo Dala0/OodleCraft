@@ -9,6 +9,7 @@ Minimum System Requirements
 Windows
 -------
 
+Three button pointing device with wheel
 Windows 95 or later or Windows NT 4 or later
 Python 2
 Pyglet
@@ -16,6 +17,7 @@ Pyglet
 Linux 
 -----
 
+Three button pointing device with wheel
 Python 2
 Pyglet
 
