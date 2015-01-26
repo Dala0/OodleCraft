@@ -2,6 +2,23 @@ python powered pyglet assisted minecraft inspired asset editor for a game I've b
 
 Generally this project is under a fairly open license.
 
+
+Minimum System Requirements
+---------------------------
+
+Windows
+-------
+
+Python 2
+Pyglet
+
+Linux 
+-----
+
+Python 2
+Pyglet
+
+
 Controls
 --------
 
