@@ -36,3 +36,5 @@ Change brush size = Mouse wheel
 Quit = Escape
 Change mode = Tab
 Toggle flight on and off = F
+Select next material = Right arrow
+Select previous material = Left arrow
