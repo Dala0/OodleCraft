@@ -12,6 +12,7 @@ dirt = 0
 dads = 0
 stuff = 0;
 mine = 0;
+dala = 0;
 
 white = (1,1,1)
 black = (0,0,0)
@@ -26,6 +27,7 @@ else:
 	dads = image.load('sprites/dads.png')
 	stuff = image.load('sprites/stuff.png')
 mine = image.load('sprites/terrain.png')
+dala = image.load('sprites/dala.png')
 
 def get_sub_icon( asset, x, y, colortoreplacewithalpha = None ):
 	icon = sub = asset.get_region(16*x,16*y,16,16)
@@ -132,3 +134,5 @@ asset( 'mc_wallmoss', mine, 4, 6, transparent )
 asset( 'mc_wallcrack', mine, 5, 6, transparent )
 asset( 'mc_pump', mine, 6, 7, transparent )
 asset( 'mc_cake', mine, 9, 7, transparent )
+
+asset( 'dala_coolinglava', dala, 0, 0, transparent )

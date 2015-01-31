@@ -86,3 +86,4 @@ material( 'mc_cake' )
 
 material( 'black' )
 
+material( 'dala_coolinglava' )
