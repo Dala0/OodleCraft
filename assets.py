@@ -136,3 +136,4 @@ asset( 'mc_pump', mine, 6, 7, transparent )
 asset( 'mc_cake', mine, 9, 7, transparent )
 
 asset( 'dala_coolinglava', dala, 0, 0, transparent )
+asset( 'dala_whitecloud', dala, 1, 0, transparent )
