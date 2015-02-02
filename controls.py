@@ -78,14 +78,14 @@ def game_on_mouse_press(s, x, y, buttons, modifiers):
 	if s.menu == 1:
 		sx = x - s.invx - s.invb
 		sy = s.height - y - s.invy - s.invb
-		if sx > 0 and sx < 40 * 8 and sy > 0 and sy < 40 * 9:
+		if sx > 0 and sx < 40 * 15 and sy > 0 and sy < 40 * 9:
 			iconx = sx/40
 			icony = sy/40
 			sx = sx - iconx*40
 			sy = sy - icony*40
 			if sx < 32 and sy < 32:
 				#select a material based on this icon
-				icon = iconx + icony * 8
+				icon = iconx + icony * 15
 				if icon > 0 and icon <= s.MAX_ID:
 					s.plonk = icon
 	if s.menu == 0:

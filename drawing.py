@@ -191,8 +191,8 @@ def game_on_draw( s ):
 		for i in range(s.MAX_ID):
 			i = i + 1
 			if i in s.textures:
-				x = i % 8
-				y = i / 8
+				x = i % 15
+				y = i / 15
 				glLoadIdentity()
 				glTranslatef(s.invx+s.invb+16-w+x*40,h-s.invy-s.invb-16-y*40,0)
 				glScalef(16.0,16.0,0.1)

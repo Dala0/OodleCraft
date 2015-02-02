@@ -79,7 +79,7 @@ state.DebugLog = lambda m : DebugLog(state, m )
 
 #constants
 state.grain = 16
-state.invwcount = 8
+state.invwcount = 15
 state.invx = 16
 state.invy = 16
 state.invs = 32
